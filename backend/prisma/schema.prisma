@@ -1,0 +1,331 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id                String       @id @default(uuid())
+  name              String
+  email             String       @unique
+  password          String
+  role              String       @default("USER")
+  active            Boolean      @default(true)
+  commissionRate    Float        @default(0)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  shifts            Shift[]
+  sales             Sale[]       @relation("SellerSales")
+  commissions       Commission[]
+  quotations        Quotation[]
+
+  @@index([email])
+  @@index([active])
+  @@index([role])
+}
+
+model Product {
+  id            String         @id @default(uuid())
+  code          String         @unique
+  barcode       String?        // Código de barras (GTIN/EAN)
+  name          String
+  description   String?
+  price         Float          // Preço de venda
+  cost          Float?         // Custo de compra
+  stock         Int            @default(0)
+  minStock      Int            @default(0)
+  category      String?
+  unit          String         @default("UN") // Unidade de medida (UN, KG, LT, etc)
+  
+  // Campos Fiscais Obrigatórios para NF-e/NFC-e
+  ncm           String?        // NCM - Nomenclatura Comum do Mercosul (8 dígitos)
+  cest          String?        // CEST - Código Especificador da Substituição Tributária (7 dígitos)
+  cfop          String?        // CFOP - Código Fiscal de Operações (4 dígitos) - Padrão para venda
+  cstIcms       String?        // CST/CSOSN ICMS (Código de Situação Tributária)
+  cstPis        String?        // CST PIS
+  cstCofins     String?        // CST COFINS
+  origem        String         @default("0") // Origem da mercadoria (0=Nacional, 1=Estrangeira-Importação direta, etc)
+  
+  // Alíquotas de Impostos
+  aliqIcms      Float?         // Alíquota ICMS (%)
+  aliqPis       Float?         // Alíquota PIS (%)
+  aliqCofins    Float?         // Alíquota COFINS (%)
+  
+  active        Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  purchaseItems PurchaseItem[]
+  saleItems     SaleItem[]
+
+  @@index([code])
+  @@index([barcode])
+  @@index([name])
+  @@index([category])
+  @@index([active])
+  @@index([ncm])
+}
+
+model Customer {
+  id            String      @id @default(uuid())
+  name          String
+  document      String?     @unique
+  email         String?
+  phone         String?
+  address       String?
+  city          String?
+  state         String?
+  zipCode       String?
+  loyaltyPoints Int         @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  sales         Sale[]
+  quotations    Quotation[]
+
+  @@index([document])
+  @@index([name])
+  @@index([email])
+}
+
+model Supplier {
+  id        String     @id @default(uuid())
+  name      String
+  document  String?    @unique
+  email     String?
+  phone     String?
+  address   String?
+  city      String?
+  state     String?
+  zipCode   String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  purchases Purchase[]
+}
+
+model Sale {
+  id            String        @id @default(uuid())
+  number        Int           @unique
+  customerId    String?
+  shiftId       String
+  sellerId      String?
+  total         Float
+  discount      Float         @default(0)
+  paymentMethod String
+  status        String        @default("PENDING")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  nfeKey        String?
+  nfeId         String?
+  pixQrCode     String?
+  pixTxId       String?
+  observations  String?
+  shift         Shift         @relation(fields: [shiftId], references: [id])
+  customer      Customer?     @relation(fields: [customerId], references: [id])
+  seller        User?         @relation("SellerSales", fields: [sellerId], references: [id])
+  items         SaleItem[]
+  nfe           NFe?          @relation(fields: [nfeId], references: [id])
+  returns       SaleReturn[]
+  commissions   Commission[]
+
+  @@index([createdAt])
+  @@index([customerId])
+  @@index([shiftId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([nfeKey])
+}
+
+model SaleItem {
+  id        String   @id @default(uuid())
+  saleId    String
+  productId String
+  quantity  Int
+  price     Float
+  discount  Float    @default(0)
+  total     Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  product   Product  @relation(fields: [productId], references: [id])
+  sale      Sale     @relation(fields: [saleId], references: [id])
+}
+
+model Purchase {
+  id         String         @id @default(uuid())
+  number     Int            @unique
+  supplierId String
+  total      Float
+  status     String         @default("PENDING")
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  nfeKey     String?
+  supplier   Supplier       @relation(fields: [supplierId], references: [id])
+  items      PurchaseItem[]
+
+  @@index([createdAt])
+  @@index([supplierId])
+  @@index([status])
+}
+
+model PurchaseItem {
+  id         String   @id @default(uuid())
+  purchaseId String
+  productId  String
+  quantity   Int
+  cost       Float
+  total      Float
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  product    Product  @relation(fields: [productId], references: [id])
+  purchase   Purchase @relation(fields: [purchaseId], references: [id])
+}
+
+model Shift {
+  id          String    @id @default(uuid())
+  number      Int       @unique
+  userId      String
+  openingCash Float
+  closingCash Float?
+  status      String    @default("OPEN")
+  openedAt    DateTime  @default(now())
+  closedAt    DateTime?
+  sales       Sale[]
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([openedAt])
+}
+
+model NFe {
+  id        String   @id @default(uuid())
+  number    Int      @unique
+  series    Int
+  key       String   @unique
+  xml       String
+  status    String
+  protocol  String?
+  qrCodeUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sales     Sale[]
+}
+
+model FiscalConfig {
+  id              String   @id @default(uuid())
+  cnpj            String
+  name            String
+  fantasyName     String
+  ie              String
+  street          String
+  number          String
+  neighborhood    String
+  city            String
+  cityCode        String
+  state           String
+  zipCode         String
+  certificate     String?
+  certificatePass String?
+  certExpiresAt   DateTime?
+  pixKey          String
+  pixMerchantName String
+  pixMerchantCity String
+  environment     String   @default("homologacao")
+  nfceSeries      Int      @default(1)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model FinancialMovement {
+  id          String   @id @default(uuid())
+  type        String
+  description String
+  amount      Float
+  date        DateTime
+  category    String
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SaleReturn {
+  id             String           @id @default(uuid())
+  number         Int              @unique
+  saleId         String
+  type           String
+  reason         String
+  total          Float
+  refundMethod   String
+  status         String           @default("PENDING")
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  processedAt    DateTime?
+  processedBy    String?
+  observations   String?
+  sale           Sale             @relation(fields: [saleId], references: [id])
+  items          SaleReturnItem[]
+}
+
+model SaleReturnItem {
+  id           String     @id @default(uuid())
+  returnId     String
+  saleItemId   String
+  productId    String
+  quantity     Int
+  price        Float
+  total        Float
+  reason       String?
+  createdAt    DateTime   @default(now())
+  return       SaleReturn @relation(fields: [returnId], references: [id])
+}
+
+model Commission {
+  id              String   @id @default(uuid())
+  saleId          String
+  sellerId        String
+  saleTotal       Float
+  commissionRate  Float
+  commissionValue Float
+  status          String   @default("PENDING")
+  paidAt          DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  sale            Sale     @relation(fields: [saleId], references: [id])
+  seller          User     @relation(fields: [sellerId], references: [id])
+
+  @@index([sellerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Quotation {
+  id           String          @id @default(uuid())
+  number       Int             @unique
+  customerId   String?
+  sellerId     String?
+  total        Float
+  discount     Float           @default(0)
+  status       String          @default("PENDING")
+  validUntil   DateTime
+  observations String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  convertedAt  DateTime?
+  saleId       String?
+  customer     Customer?       @relation(fields: [customerId], references: [id])
+  seller       User?           @relation(fields: [sellerId], references: [id])
+  items        QuotationItem[]
+}
+
+model QuotationItem {
+  id          String    @id @default(uuid())
+  quotationId String
+  productId   String
+  quantity    Int
+  price       Float
+  discount    Float     @default(0)
+  total       Float
+  createdAt   DateTime  @default(now())
+  quotation   Quotation @relation(fields: [quotationId], references: [id])
+}

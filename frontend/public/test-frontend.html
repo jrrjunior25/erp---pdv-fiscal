@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Frontend ERP</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #1a1a1a; color: #fff; }
+        .test { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #2d5016; }
+        .error { background: #5c1010; }
+        .loading { background: #3a3a0a; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste de Integração Frontend-Backend</h1>
+    
+    <div id="results"></div>
+    
+    <button onclick="testarLogin()">1. Testar Login</button>
+    <button onclick="testarProdutos()">2. Testar Produtos</button>
+    <button onclick="testarClientes()">3. Testar Clientes</button>
+    <button onclick="testarDashboard()">4. Testar Dashboard</button>
+    <button onclick="testarTodos()">5. Testar Todos</button>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+        let token = '';
+
+        function addResult(title, status, message) {
+            const div = document.createElement('div');
+            div.className = `test ${status}`;
+            div.innerHTML = `<strong>${title}</strong>: ${message}`;
+            document.getElementById('results').appendChild(div);
+        }
+
+        async function testarLogin() {
+            addResult('Login', 'loading', 'Testando...');
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'admin@pdv.com',
+                        password: 'adm123'
+                    })
+                });
+                const data = await response.json();
+                if (data.token) {
+                    token = data.token;
+                    addResult('Login', 'success', `Token obtido! Usuário: ${data.user.name}`);
+                    return true;
+                } else {
+                    addResult('Login', 'error', 'Token não retornado');
+                    return false;
+                }
+            } catch (error) {
+                addResult('Login', 'error', error.message);
+                return false;
+            }
+        }
+
+        async function testarProdutos() {
+            if (!token) await testarLogin();
+            addResult('Produtos', 'loading', 'Carregando...');
+            try {
+                const response = await fetch(`${API_URL}/products`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                addResult('Produtos', 'success', `${data.length} produtos encontrados`);
+            } catch (error) {
+                addResult('Produtos', 'error', error.message);
+            }
+        }
+
+        async function testarClientes() {
+            if (!token) await testarLogin();
+            addResult('Clientes', 'loading', 'Carregando...');
+            try {
+                const response = await fetch(`${API_URL}/customers`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                addResult('Clientes', 'success', `${data.length} clientes encontrados`);
+            } catch (error) {
+                addResult('Clientes', 'error', error.message);
+            }
+        }
+
+        async function testarDashboard() {
+            if (!token) await testarLogin();
+            addResult('Dashboard', 'loading', 'Carregando...');
+            try {
+                const response = await fetch(`${API_URL}/analytics/dashboard`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                addResult('Dashboard', 'success', 
+                    `Produtos: ${data.totalProducts}, Clientes: ${data.totalCustomers}, Vendas: ${data.totalSales}`);
+            } catch (error) {
+                addResult('Dashboard', 'error', error.message);
+            }
+        }
+
+        async function testarTodos() {
+            document.getElementById('results').innerHTML = '';
+            await testarLogin();
+            await testarProdutos();
+            await testarClientes();
+            await testarDashboard();
+            addResult('Conclusão', 'success', '✅ Todos os testes concluídos!');
+        }
+    </script>
+</body>
+</html>

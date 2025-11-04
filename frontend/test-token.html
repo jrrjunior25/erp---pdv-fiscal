@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Token</title>
+</head>
+<body>
+    <h1>Test Token</h1>
+    <button onclick="testToken()">Test Auth</button>
+    <pre id="result"></pre>
+
+    <script>
+        async function testToken() {
+            const token = localStorage.getItem('pdv-auth-token');
+            const result = document.getElementById('result');
+            
+            result.textContent = 'Token: ' + (token ? 'Presente' : 'Ausente') + '\n\n';
+            
+            if (!token) {
+                result.textContent += 'Faça login primeiro!';
+                return;
+            }
+
+            try {
+                // Teste 1: Endpoint sem auth
+                const res1 = await fetch('http://localhost:3001/api/products/test');
+                const data1 = await res1.json();
+                result.textContent += 'Test (sem auth): ' + JSON.stringify(data1, null, 2) + '\n\n';
+
+                // Teste 2: Endpoint com auth
+                const res2 = await fetch('http://localhost:3001/api/products/test-auth', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                const data2 = await res2.json();
+                result.textContent += 'Test-Auth (com auth): ' + JSON.stringify(data2, null, 2) + '\n\n';
+
+                // Teste 3: Export
+                const res3 = await fetch('http://localhost:3001/api/products/export/excel', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                result.textContent += 'Export Status: ' + res3.status + '\n';
+                result.textContent += 'Export Headers: ' + JSON.stringify([...res3.headers.entries()], null, 2);
+            } catch (error) {
+                result.textContent += 'Erro: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
