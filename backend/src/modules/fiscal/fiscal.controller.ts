@@ -1,8 +1,9 @@
-import { Controller, Post, Body, UseGuards, Get, Param, Put } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Param, Put, HttpException, HttpStatus } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { FiscalService } from './fiscal.service';
 import { IssueNfceDto } from './dto/issue-nfce.dto';
 import { GeneratePixDto } from './dto/generate-pix.dto';
+import { FISCAL_CONSTANTS } from './constants/fiscal.constants';
 
 @Controller('fiscal')
 export class FiscalController {
@@ -10,13 +11,21 @@ export class FiscalController {
 
   @Post('pix/generate')
   async generatePix(@Body() dto: GeneratePixDto) {
-    return this.fiscalService.generatePixCharge(dto);
+    try {
+      return await this.fiscalService.generatePixCharge(dto);
+    } catch (error) {
+      throw new HttpException(FISCAL_CONSTANTS.ERROR_MESSAGES.PIX_ERROR, HttpStatus.BAD_REQUEST);
+    }
   }
 
   @Post('issue-nfce')
   @UseGuards(JwtAuthGuard)
   async issueNfce(@Body() dto: IssueNfceDto) {
-    return this.fiscalService.issueNfce(dto);
+    try {
+      return await this.fiscalService.issueNfce(dto);
+    } catch (error) {
+      throw new HttpException(FISCAL_CONSTANTS.ERROR_MESSAGES.NFCE_ERROR, HttpStatus.BAD_REQUEST);
+    }
   }
 
   @Post('generate-pix')
@@ -57,7 +66,11 @@ export class FiscalController {
   @Post('certificate')
   @UseGuards(JwtAuthGuard)
   async uploadCertificate(@Body() data: { certificate: string; password: string }) {
-    return this.fiscalService.uploadCertificate(data.certificate, data.password);
+    try {
+      return await this.fiscalService.uploadCertificate(data.certificate, data.password);
+    } catch (error) {
+      throw new HttpException(FISCAL_CONSTANTS.ERROR_MESSAGES.CERTIFICATE_ERROR, HttpStatus.BAD_REQUEST);
+    }
   }
 
   @Get('sefaz/status')

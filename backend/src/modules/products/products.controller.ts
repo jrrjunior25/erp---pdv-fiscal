@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, UploadedFile, UseInterceptors, Res, StreamableFile } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, UploadedFile, UseInterceptors, Res, HttpException, HttpStatus } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -6,6 +6,8 @@ import { ProductsService } from './products.service';
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
 import { ProductEnrichmentService } from './services/product-enrichment.service';
 import { ProductExcelService } from './services/product-excel.service';
+import { PRODUCTS_CONSTANTS } from './constants/products.constants';
+import { ProductFilters } from './interfaces/products.interface';
 
 @Controller('products')
 export class ProductsController {
@@ -97,31 +99,61 @@ export class ProductsController {
 
   @Get()
   @UseGuards(JwtAuthGuard)
-  findAll() {
-    return this.productsService.findAll();
+  async findAll(@Query() filters: ProductFilters) {
+    try {
+      return await this.productsService.findAll(filters);
+    } catch (error) {
+      throw new HttpException(PRODUCTS_CONSTANTS.ERROR_MESSAGES.FETCH_ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Get('stats')
+  @UseGuards(JwtAuthGuard)
+  async getStats() {
+    try {
+      return await this.productsService.getStats();
+    } catch (error) {
+      throw new HttpException(PRODUCTS_CONSTANTS.ERROR_MESSAGES.FETCH_ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   @Get(':id')
   @UseGuards(JwtAuthGuard)
-  findOne(@Param('id') id: string) {
-    return this.productsService.findOne(id);
+  async findOne(@Param('id') id: string) {
+    try {
+      return await this.productsService.findOne(id);
+    } catch (error) {
+      throw new HttpException(PRODUCTS_CONSTANTS.ERROR_MESSAGES.FETCH_ERROR, HttpStatus.NOT_FOUND);
+    }
   }
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  create(@Body() createProductDto: CreateProductDto) {
-    return this.productsService.create(createProductDto);
+  async create(@Body() createProductDto: CreateProductDto) {
+    try {
+      return await this.productsService.create(createProductDto);
+    } catch (error) {
+      throw new HttpException(PRODUCTS_CONSTANTS.ERROR_MESSAGES.CREATE_ERROR, HttpStatus.BAD_REQUEST);
+    }
   }
 
   @Put(':id')
   @UseGuards(JwtAuthGuard)
-  update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
-    return this.productsService.update(id, updateProductDto);
+  async update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
+    try {
+      return await this.productsService.update(id, updateProductDto);
+    } catch (error) {
+      throw new HttpException(PRODUCTS_CONSTANTS.ERROR_MESSAGES.UPDATE_ERROR, HttpStatus.BAD_REQUEST);
+    }
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
-  remove(@Param('id') id: string) {
-    return this.productsService.remove(id);
+  async remove(@Param('id') id: string) {
+    try {
+      return await this.productsService.remove(id);
+    } catch (error) {
+      throw new HttpException(PRODUCTS_CONSTANTS.ERROR_MESSAGES.DELETE_ERROR, HttpStatus.BAD_REQUEST);
+    }
   }
 }

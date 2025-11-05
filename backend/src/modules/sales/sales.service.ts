@@ -1,8 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FiscalService } from '../fiscal/fiscal.service';
 import { CommissionsService } from '../commissions/commissions.service';
 import { CreateSaleDto, UpdateSaleDto } from './dto/sale.dto';
+import { SaleFilters, SaleStats } from './interfaces/sales.interface';
+import { SALES_CONSTANTS } from './constants/sales.constants';
 
 @Injectable()
 export class SalesService {
@@ -14,10 +16,35 @@ export class SalesService {
     private commissionsService: CommissionsService,
   ) {}
 
-  async findAll() {
+  async findAll(filters?: SaleFilters) {
+    const where = this.buildWhereClause(filters);
+    
     return this.prisma.sale.findMany({
+      where,
+      include: {
+        items: {
+          include: {
+            product: { select: { name: true } }
+          }
+        },
+        customer: { select: { name: true } },
+        shift: { select: { number: true } }
+      },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  private buildWhereClause(filters?: SaleFilters) {
+    if (!filters) return {};
+
+    return {
+      ...(filters.startDate && { createdAt: { gte: filters.startDate } }),
+      ...(filters.endDate && { createdAt: { lte: filters.endDate } }),
+      ...(filters.customerId && { customerId: filters.customerId }),
+      ...(filters.sellerId && { sellerId: filters.sellerId }),
+      ...(filters.paymentMethod && { paymentMethod: filters.paymentMethod }),
+      ...(filters.status && { status: filters.status }),
+    };
   }
 
   async getHistory() {
@@ -55,9 +82,24 @@ export class SalesService {
   }
 
   async findOne(id: string) {
-    return this.prisma.sale.findUnique({
+    const sale = await this.prisma.sale.findUnique({
       where: { id },
+      include: {
+        items: {
+          include: {
+            product: true
+          }
+        },
+        customer: true,
+        shift: true
+      },
     });
+
+    if (!sale) {
+      throw new NotFoundException(SALES_CONSTANTS.VALIDATION_MESSAGES.SALE_NOT_FOUND);
+    }
+
+    return sale;
   }
 
   async create(data: CreateSaleDto) {
@@ -82,24 +124,7 @@ export class SalesService {
   async createSale(saleData: any) {
     this.logger.log('Creating sale with data:', JSON.stringify(saleData, null, 2));
 
-    // Validate required fields
-    if (!saleData.shiftId) {
-      throw new Error('shiftId is required');
-    }
-    if (!saleData.items || saleData.items.length === 0) {
-      throw new Error('items are required');
-    }
-    if (!saleData.paymentMethod) {
-      throw new Error('paymentMethod is required');
-    }
-
-    // Validate all items have productId
-    for (const item of saleData.items) {
-      if (!item.productId) {
-        this.logger.error('Item missing productId:', item);
-        throw new Error('All items must have a productId');
-      }
-    }
+    this.validateSaleData(saleData);
 
     // Get the next sale number
     const lastSale = await this.prisma.sale.findFirst({
@@ -235,5 +260,85 @@ export class SalesService {
       pix: pixResult,
       commission: commissionResult,
     };
+  }
+
+  private validateSaleData(saleData: any) {
+    if (!saleData.shiftId) {
+      throw new BadRequestException(SALES_CONSTANTS.VALIDATION_MESSAGES.SHIFT_REQUIRED);
+    }
+    if (!saleData.items || saleData.items.length === 0) {
+      throw new BadRequestException(SALES_CONSTANTS.VALIDATION_MESSAGES.ITEMS_REQUIRED);
+    }
+    if (!saleData.paymentMethod) {
+      throw new BadRequestException(SALES_CONSTANTS.VALIDATION_MESSAGES.PAYMENT_METHOD_REQUIRED);
+    }
+
+    for (const item of saleData.items) {
+      if (!item.productId) {
+        throw new BadRequestException(SALES_CONSTANTS.VALIDATION_MESSAGES.PRODUCT_ID_REQUIRED);
+      }
+    }
+  }
+
+  async getStats(filters?: SaleFilters): Promise<SaleStats> {
+    const where = this.buildWhereClause(filters);
+
+    const [salesCount, salesSum, topProducts, paymentStats] = await Promise.all([
+      this.prisma.sale.count({ where }),
+      this.prisma.sale.aggregate({ where, _sum: { total: true } }),
+      this.getTopProducts(where),
+      this.getPaymentMethodStats(where),
+    ]);
+
+    const totalRevenue = salesSum._sum.total || 0;
+    const averageTicket = salesCount > 0 ? totalRevenue / salesCount : 0;
+
+    return {
+      totalSales: salesCount,
+      totalRevenue,
+      averageTicket,
+      topProducts,
+      paymentMethodStats,
+    };
+  }
+
+  private async getTopProducts(where: any) {
+    const result = await this.prisma.saleItem.groupBy({
+      by: ['productId'],
+      where: { sale: where },
+      _sum: { quantity: true, total: true },
+      orderBy: { _sum: { total: 'desc' } },
+      take: 10,
+    });
+
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: result.map(r => r.productId) } },
+      select: { id: true, name: true },
+    });
+
+    return result.map(item => {
+      const product = products.find(p => p.id === item.productId);
+      return {
+        productId: item.productId,
+        productName: product?.name || 'Produto não encontrado',
+        quantity: item._sum.quantity || 0,
+        revenue: item._sum.total || 0,
+      };
+    });
+  }
+
+  private async getPaymentMethodStats(where: any) {
+    return this.prisma.sale.groupBy({
+      by: ['paymentMethod'],
+      where,
+      _count: { id: true },
+      _sum: { total: true },
+    }).then(results => 
+      results.map(item => ({
+        method: item.paymentMethod,
+        count: item._count.id,
+        total: item._sum.total || 0,
+      }))
+    );
   }
 }
