@@ -757,7 +757,11 @@ const AppContent: React.FC = () => {
           customer={selectedCustomer}
           cartTotal={total + loyaltyDiscountAmount}
           onClose={() => setLoyaltyModalOpen(false)}
-          onSubmit={applyLoyaltyPoints}
+          onSubmit={(points, amount) => {
+            applyLoyaltyPoints(points, amount);
+            setLoyaltyModalOpen(false);
+            showSuccess('Pontos resgatados com sucesso!');
+          }}
         />
       )}
 

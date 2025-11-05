@@ -3,11 +3,13 @@ import * as crypto from 'crypto';
 
 interface PixChargeData {
   amount: number;
-  merchantName: string;
-  merchantCity: string;
-  pixKey: string;
+  merchantName?: string;
+  merchantCity?: string;
+  pixKey?: string;
   description?: string;
   txId?: string;
+  saleId?: string;
+  customerName?: string;
 }
 
 interface PixCharge {
@@ -27,16 +29,27 @@ export class PixService {
   async generatePixCharge(data: PixChargeData): Promise<PixCharge> {
     this.logger.log(`Gerando cobrança PIX no valor de R$ ${data.amount}`);
 
-    const txId = data.txId || this.generateTxId();
-    const qrCode = this.generateBRCode(data);
+    // Valores padrão
+    const pixData = {
+      amount: data.amount,
+      merchantName: data.merchantName || 'COMERCIO',
+      merchantCity: data.merchantCity || 'SAO PAULO',
+      pixKey: data.pixKey || process.env.PIX_KEY || '12345678000190',
+      description: data.description || `Venda ${data.saleId || ''}`,
+      txId: data.txId || this.generateTxId(),
+    };
+
+    const qrCode = this.generateBRCode(pixData);
 
     // Expira em 30 minutos
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 30);
 
+    this.logger.log(`PIX gerado: ${pixData.txId}`);
+
     return {
       qrCode,
-      txId,
+      txId: pixData.txId,
       amount: data.amount,
       expiresAt,
     };

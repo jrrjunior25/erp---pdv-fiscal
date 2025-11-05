@@ -35,7 +35,7 @@ const SalesHistory: React.FC<SalesHistoryProps> = ({ sales }) => {
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       
       filtered = filtered.filter(sale => {
-        const saleDate = new Date(sale.timestamp || sale.createdAt);
+        const saleDate = new Date(sale.date || sale.timestamp || sale.createdAt);
         
         if (dateFilter === 'today') {
           return saleDate >= today;
@@ -53,9 +53,9 @@ const SalesHistory: React.FC<SalesHistoryProps> = ({ sales }) => {
     }
 
     return filtered.sort((a, b) => {
-      const dateA = new Date(b.timestamp || b.createdAt).getTime();
-      const dateB = new Date(a.timestamp || a.createdAt).getTime();
-      return dateA - dateB;
+      const dateA = new Date(a.date || a.timestamp || a.createdAt).getTime();
+      const dateB = new Date(b.date || b.timestamp || b.createdAt).getTime();
+      return dateB - dateA;
     });
   }, [sales, searchTerm, filterPayment, dateFilter]);
 
@@ -208,8 +208,8 @@ const SalesHistory: React.FC<SalesHistoryProps> = ({ sales }) => {
               <tr key={sale.id} className="hover:bg-brand-border/30">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-white">
-                    {sale.timestamp || sale.createdAt 
-                      ? new Date(sale.timestamp || sale.createdAt).toLocaleString('pt-BR')
+                    {sale.date || sale.timestamp || sale.createdAt 
+                      ? new Date(sale.date || sale.timestamp || sale.createdAt).toLocaleString('pt-BR')
                       : 'Data não disponível'}
                   </div>
                 </td>

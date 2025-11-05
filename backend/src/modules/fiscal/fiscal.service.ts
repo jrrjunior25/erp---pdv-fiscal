@@ -183,26 +183,27 @@ export class FiscalService {
     try {
       this.logger.log(`Gerando cobrança PIX de R$ ${dto.amount}`);
 
-      // Buscar configuração fiscal
-      const fiscalConfig = await this.getFiscalConfigFromDb();
+      // Tentar buscar do banco, se falhar usar .env
+      let pixKey = process.env.PIX_KEY;
+      let merchantName = process.env.PIX_MERCHANT_NAME;
+      let merchantCity = process.env.PIX_MERCHANT_CITY;
 
-      // Log dos dados PIX
-      this.logger.log(`Dados PIX encontrados: ${JSON.stringify({
-        pixKey: fiscalConfig.pixKey,
-        merchantName: fiscalConfig.pixMerchantName,
-        merchantCity: fiscalConfig.pixMerchantCity,
-      })}`);
-
-      // Validar se tem dados PIX
-      if (!fiscalConfig.pixKey || !fiscalConfig.pixMerchantName || !fiscalConfig.pixMerchantCity) {
-        throw new BadRequestException('Configuração PIX incompleta. Por favor, configure os dados PIX nas configurações do sistema.');
+      try {
+        const fiscalConfig = await this.prisma.fiscalConfig.findFirst();
+        if (fiscalConfig?.pixKey) {
+          pixKey = fiscalConfig.pixKey;
+          merchantName = fiscalConfig.pixMerchantName;
+          merchantCity = fiscalConfig.pixMerchantCity;
+        }
+      } catch (error) {
+        this.logger.warn('Usando configuração PIX do .env');
       }
 
       const pixCharge = await this.pixService.generatePixCharge({
         amount: dto.amount,
-        merchantName: fiscalConfig.pixMerchantName,
-        merchantCity: fiscalConfig.pixMerchantCity,
-        pixKey: fiscalConfig.pixKey,
+        merchantName,
+        merchantCity,
+        pixKey,
         description: dto.description || `Venda ${dto.saleId || 'PDV'}`,
         txId: dto.saleId,
       });

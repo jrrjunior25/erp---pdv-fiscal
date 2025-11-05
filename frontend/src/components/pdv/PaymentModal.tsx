@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import type { Payment, PaymentMethod, Customer } from '@types';
 
 const WalletIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -37,6 +38,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ total, onFinalize, onCancel
     const [receivedValue, setReceivedValue] = useState('');
     const [cardState, setCardState] = useState<CardState>('idle');
     const [isFinalizing, setIsFinalizing] = useState(false);
+    const [pixQrCode, setPixQrCode] = useState<string>('');
+    const [pixLoading, setPixLoading] = useState(false);
 
     const amountPaid = useMemo(() => payments.reduce((sum, p) => sum + p.amount, 0), [payments]);
     const amountRemaining = useMemo(() => total - amountPaid, [total, amountPaid]);
@@ -81,6 +84,27 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ total, onFinalize, onCancel
         }, 2000);
     }
     
+    const handleGeneratePixQrCode = async () => {
+        setPixLoading(true);
+        try {
+            const response = await fetch('http://localhost:3001/api/fiscal/pix/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    amount: parseFloat(paymentValue || '0'),
+                    description: 'Pagamento PDV'
+                })
+            });
+            const data = await response.json();
+            setPixQrCode(data.qrCode);
+        } catch (error) {
+            console.error('Erro ao gerar QR Code PIX:', error);
+            alert('Erro ao gerar QR Code PIX');
+        } finally {
+            setPixLoading(false);
+        }
+    };
+
     const handleFinalize = async () => {
         setIsFinalizing(true);
         const finalChange = payments.some(p => p.method === 'Dinheiro') ? change : 0;
@@ -125,11 +149,22 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ total, onFinalize, onCancel
                     </div>
                 );
             case 'PIX':
-                 return (
+                return (
                     <div className="text-center p-4 flex flex-col items-center justify-center">
-                       <QrCodeIcon className="w-24 h-24 text-brand-text mb-4" />
-                       <p className="text-sm text-brand-subtle mb-4">Aponte a câmera para o QR Code para pagar.</p>
-                       <button onClick={handleAddPayment} className="w-full py-2 bg-green-600 rounded-md text-white font-semibold hover:bg-green-500">Confirmar Pagamento PIX</button>
+                        {pixLoading ? (
+                            <><Spinner className="w-12 h-12 text-brand-accent mb-4" /><p>Gerando QR Code...</p></>
+                        ) : pixQrCode ? (
+                            <>
+                                <div className="bg-white p-4 rounded-lg mb-4">
+                                    <QRCodeSVG value={pixQrCode} size={200} level="M" />
+                                </div>
+                                <p className="text-sm text-brand-subtle mb-2">Valor: {parseFloat(paymentValue || '0').toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                                <p className="text-xs text-brand-subtle mb-4">Aponte a câmera do app do banco para o QR Code</p>
+                                <button onClick={handleAddPayment} className="w-full py-2 bg-green-600 rounded-md text-white font-semibold hover:bg-green-500">Confirmar Pagamento PIX</button>
+                            </>
+                        ) : (
+                            <button onClick={handleGeneratePixQrCode} className="w-full py-3 bg-green-600 rounded-md text-white font-semibold hover:bg-green-500">Gerar QR Code PIX</button>
+                        )}
                     </div>
                 );
             case 'Fiado':

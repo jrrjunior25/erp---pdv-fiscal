@@ -16,7 +16,7 @@ export class GeminiService implements OnModuleInit {
             return;
         }
         this.ai = new GoogleGenerativeAI(apiKey);
-        this.model = this.ai.getGenerativeModel({ model: "gemini-pro" });
+        this.model = this.ai.getGenerativeModel({ model: "gemini-1.5-flash" });
     }
 
     private sanitizeDataForPrompt(data: any[]): string {

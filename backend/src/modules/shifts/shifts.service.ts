@@ -13,9 +13,36 @@ export class ShiftsService {
   }
 
   async getHistory() {
-    return this.prisma.shift.findMany({
+    const shifts = await this.prisma.shift.findMany({
+      include: {
+        user: {
+          select: { name: true }
+        },
+        sales: true
+      },
       orderBy: { openedAt: 'desc' },
       take: 100,
+    });
+
+    return shifts.map(shift => {
+      const totalSales = shift.sales.reduce((sum, sale) => sum + sale.total, 0);
+      const expectedBalance = shift.openingCash + totalSales;
+      const balanceDifference = shift.closingCash ? shift.closingCash - expectedBalance : null;
+
+      return {
+        id: shift.id,
+        number: shift.number,
+        openedAt: shift.openedAt,
+        closedAt: shift.closedAt,
+        userName: shift.user?.name || 'N/A',
+        operatorName: shift.user?.name || 'N/A',
+        openingBalance: shift.openingCash,
+        closingBalance: shift.closingCash,
+        totalSales,
+        expectedBalance,
+        balanceDifference,
+        status: shift.status
+      };
     });
   }
 

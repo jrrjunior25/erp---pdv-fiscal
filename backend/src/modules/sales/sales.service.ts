@@ -21,10 +21,37 @@ export class SalesService {
   }
 
   async getHistory() {
-    return this.prisma.sale.findMany({
+    const sales = await this.prisma.sale.findMany({
+      include: {
+        items: {
+          include: {
+            product: { select: { name: true } }
+          }
+        },
+        customer: { select: { name: true } },
+        shift: { select: { number: true } }
+      },
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
+
+    return sales.map(sale => ({
+      id: sale.id,
+      number: sale.number,
+      date: sale.createdAt,
+      customerName: sale.customer?.name || 'Cliente Avulso',
+      items: sale.items.map(item => ({
+        productName: item.product.name,
+        quantity: item.quantity,
+        price: item.price,
+        total: item.total
+      })),
+      total: sale.total,
+      discount: sale.discount,
+      paymentMethod: sale.paymentMethod,
+      status: sale.status,
+      shiftNumber: sale.shift?.number
+    }));
   }
 
   async findOne(id: string) {
@@ -123,15 +150,18 @@ export class SalesService {
     }
 
     // Update customer loyalty points if exists
-    if (saleData.customerId && saleData.loyaltyPointsEarned) {
-      await this.prisma.customer.update({
-        where: { id: saleData.customerId },
-        data: {
-          loyaltyPoints: {
-            increment: saleData.loyaltyPointsEarned,
+    if (saleData.customerId) {
+      const pointsChange = (saleData.loyaltyPointsEarned || 0) - (saleData.loyaltyPointsRedeemed || 0);
+      if (pointsChange !== 0) {
+        await this.prisma.customer.update({
+          where: { id: saleData.customerId },
+          data: {
+            loyaltyPoints: {
+              increment: pointsChange,
+            },
           },
-        },
-      });
+        });
+      }
     }
 
     // Get updated shift
