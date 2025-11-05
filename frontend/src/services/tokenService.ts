@@ -6,7 +6,11 @@ const TOKEN_KEY = 'pdv-auth-token';
  */
 export const saveToken = (token: string): void => {
     try {
-        localStorage.setItem(TOKEN_KEY, token);
+        if (!token || typeof token !== 'string') {
+            throw new Error('Invalid token');
+        }
+        const sanitized = token.replace(/[<>"']/g, '');
+        localStorage.setItem(TOKEN_KEY, sanitized);
     } catch (error) {
         console.error("Failed to save auth token to localStorage:", error);
     }

@@ -1,4 +1,5 @@
 const http = require('http');
+require('dotenv').config();
 
 let token = '';
 
@@ -46,8 +47,8 @@ async function testEndpoints() {
   // 1. Login
   console.log('1. POST /api/auth/login');
   const loginRes = await makeRequest('/api/auth/login', 'POST', {
-    email: 'admin@pdv.com',
-    password: 'adm123'
+    email: process.env.TEST_EMAIL || 'admin@pdv.com',
+    password: process.env.TEST_PASSWORD || 'adm123'
   });
   console.log(`   Status: ${loginRes.status}`);
   if (loginRes.data.token) {

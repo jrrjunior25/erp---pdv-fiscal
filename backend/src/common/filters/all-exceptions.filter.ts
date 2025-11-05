@@ -37,10 +37,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (status === HttpStatus.INTERNAL_SERVER_ERROR) {
       this.logger.error({
         ...errorResponse,
-        error: exception instanceof Error ? exception.message : exception,
-        stack: exception instanceof Error ? exception.stack : undefined,
-        body: request.body,
-        query: request.query,
+        error: exception instanceof Error ? exception.message : 'Unknown error',
       });
 
       response.status(status).json({
@@ -51,8 +48,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     } else {
       this.logger.warn({
         ...errorResponse,
-        message,
-        body: request.body,
+        message: typeof message === 'string' ? message : 'Error occurred',
       });
 
       response.status(status).json(

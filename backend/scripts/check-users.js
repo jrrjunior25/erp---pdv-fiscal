@@ -32,7 +32,7 @@ async function checkUsers() {
     console.log('  Senha: adm123\n');
     
   } catch (error) {
-    console.error('Erro ao verificar usuários:', error);
+    console.error('Erro ao verificar usuários:', error.message || error);
   } finally {
     await prisma.$disconnect();
   }

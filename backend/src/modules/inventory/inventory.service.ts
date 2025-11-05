@@ -184,18 +184,18 @@ export class InventoryService {
   async confirmNfe(data: any) {
     const { parsedData } = data;
     
-    console.log('[NFe Import] Starting confirmation with data:', JSON.stringify(parsedData, null, 2));
+    console.log('[NFe Import] Starting confirmation');
     
     try {
       // 1. Create or get supplier
       let supplier;
       if (parsedData.supplier.exists) {
-        console.log('[NFe Import] Using existing supplier:', parsedData.supplier.existingId);
+        console.log('[NFe Import] Using existing supplier');
         supplier = await this.prisma.supplier.findUnique({
           where: { id: parsedData.supplier.existingId },
         });
       } else {
-        console.log('[NFe Import] Creating new supplier:', parsedData.supplier.name);
+        console.log('[NFe Import] Creating new supplier');
         supplier = await this.prisma.supplier.create({
           data: {
             name: parsedData.supplier.name,
@@ -205,7 +205,7 @@ export class InventoryService {
             address: parsedData.supplier.address || null,
           },
         });
-        console.log('[NFe Import] Supplier created with ID:', supplier.id);
+        console.log('[NFe Import] Supplier created');
       }
 
       // 2. Create or update products and add stock
@@ -214,10 +214,10 @@ export class InventoryService {
       let newProductsCreated = 0;
       let stockEntries = 0;
 
-      console.log('[NFe Import] Processing', parsedData.products.length, 'products');
+      console.log('[NFe Import] Processing products');
 
       for (const productData of parsedData.products) {
-        console.log('[NFe Import] Processing product:', productData.code, productData.name);
+        console.log('[NFe Import] Processing product');
         let product;
         
         if (productData.exists) {
@@ -234,7 +234,7 @@ export class InventoryService {
                 stock: { increment: productData.quantity },
               },
             });
-            console.log('[NFe Import] Stock updated for product:', product.id, 'new stock:', product.stock + productData.quantity);
+            console.log('[NFe Import] Stock updated');
           }
         } else {
           // Create new product
@@ -250,7 +250,7 @@ export class InventoryService {
               category: 'Importado NF-e',
             },
           });
-          console.log('[NFe Import] Product created with ID:', product.id);
+          console.log('[NFe Import] Product created');
           newProductsCreated++;
         }
 
@@ -273,7 +273,7 @@ export class InventoryService {
         }
       }
 
-      console.log('[NFe Import] Products processed:', productsProcessed.length);
+      console.log('[NFe Import] Products processed');
 
       // 3. Create purchase record with items
       console.log('[NFe Import] Creating purchase record');
@@ -298,7 +298,7 @@ export class InventoryService {
         },
       });
       
-      console.log('[NFe Import] Purchase created with ID:', purchase.id, 'with', purchase.items.length, 'items');
+      console.log('[NFe Import] Purchase created');
 
       const result = {
         summary: {
@@ -315,7 +315,7 @@ export class InventoryService {
         },
       };
       
-      console.log('[NFe Import] Confirmation completed successfully:', JSON.stringify(result, null, 2));
+      console.log('[NFe Import] Confirmation completed successfully');
       return result;
     } catch (error) {
       console.error('[NFe Import] Error during confirmation:', error);

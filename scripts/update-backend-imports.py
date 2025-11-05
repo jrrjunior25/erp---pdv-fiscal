@@ -11,7 +11,13 @@ MODULE_NAMES = [
 def update_backend_imports(file_path):
     """Atualiza imports em arquivos do backend"""
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        # Validate path to prevent traversal
+        abs_path = os.path.abspath(file_path)
+        if not abs_path.startswith(os.path.abspath(os.path.dirname(__file__))):
+            print(f"[ERRO] Path inválido: {file_path}")
+            return False
+        
+        with open(abs_path, 'r', encoding='utf-8') as f:
             content = f.read()
         
         original_content = content
@@ -30,7 +36,7 @@ def update_backend_imports(file_path):
         
         # Se houve mudanças, salvar o arquivo
         if content != original_content:
-            with open(file_path, 'w', encoding='utf-8') as f:
+            with open(abs_path, 'w', encoding='utf-8') as f:
                 f.write(content)
             print(f"[OK] Atualizado: {file_path}")
             return True

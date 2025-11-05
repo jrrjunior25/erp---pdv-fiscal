@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '@services/apiClient';
+import { sanitizeText } from '@utils/sanitize';
 
 interface Settings {
   company: {
@@ -198,23 +199,23 @@ const SettingsManagement: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={labelClass}>CNPJ</label>
-                  <input type="text" value={settings.company.cnpj} onChange={(e) => setSettings({...settings, company: {...settings.company, cnpj: e.target.value}})} className={inputClass} placeholder="00.000.000/0000-00" />
+                  <input type="text" value={settings.company.cnpj} onChange={(e) => setSettings({...settings, company: {...settings.company, cnpj: sanitizeText(e.target.value)}})} className={inputClass} placeholder="00.000.000/0000-00" maxLength={18} />
                 </div>
                 <div>
                   <label className={labelClass}>Inscrição Estadual</label>
-                  <input type="text" value={settings.company.ie} onChange={(e) => setSettings({...settings, company: {...settings.company, ie: e.target.value}})} className={inputClass} />
+                  <input type="text" value={settings.company.ie} onChange={(e) => setSettings({...settings, company: {...settings.company, ie: sanitizeText(e.target.value)}})} className={inputClass} maxLength={20} />
                 </div>
                 <div className="col-span-2">
                   <label className={labelClass}>Razão Social</label>
-                  <input type="text" value={settings.company.name} onChange={(e) => setSettings({...settings, company: {...settings.company, name: e.target.value}})} className={inputClass} />
+                  <input type="text" value={settings.company.name} onChange={(e) => setSettings({...settings, company: {...settings.company, name: sanitizeText(e.target.value)}})} className={inputClass} maxLength={200} />
                 </div>
                 <div className="col-span-2">
                   <label className={labelClass}>Nome Fantasia</label>
-                  <input type="text" value={settings.company.fantasyName} onChange={(e) => setSettings({...settings, company: {...settings.company, fantasyName: e.target.value}})} className={inputClass} />
+                  <input type="text" value={settings.company.fantasyName} onChange={(e) => setSettings({...settings, company: {...settings.company, fantasyName: sanitizeText(e.target.value)}})} className={inputClass} maxLength={200} />
                 </div>
                 <div>
                   <label className={labelClass}>Logradouro</label>
-                  <input type="text" value={settings.company.street} onChange={(e) => setSettings({...settings, company: {...settings.company, street: e.target.value}})} className={inputClass} />
+                  <input type="text" value={settings.company.street} onChange={(e) => setSettings({...settings, company: {...settings.company, street: sanitizeText(e.target.value)}})} className={inputClass} maxLength={100} />
                 </div>
                 <div>
                   <label className={labelClass}>Número</label>
@@ -222,11 +223,11 @@ const SettingsManagement: React.FC = () => {
                 </div>
                 <div>
                   <label className={labelClass}>Bairro</label>
-                  <input type="text" value={settings.company.neighborhood} onChange={(e) => setSettings({...settings, company: {...settings.company, neighborhood: e.target.value}})} className={inputClass} />
+                  <input type="text" value={settings.company.neighborhood} onChange={(e) => setSettings({...settings, company: {...settings.company, neighborhood: sanitizeText(e.target.value)}})} className={inputClass} maxLength={60} />
                 </div>
                 <div>
                   <label className={labelClass}>Cidade</label>
-                  <input type="text" value={settings.company.city} onChange={(e) => setSettings({...settings, company: {...settings.company, city: e.target.value}})} className={inputClass} />
+                  <input type="text" value={settings.company.city} onChange={(e) => setSettings({...settings, company: {...settings.company, city: sanitizeText(e.target.value)}})} className={inputClass} maxLength={60} />
                 </div>
                 <div>
                   <label className={labelClass}>Código IBGE da Cidade</label>
@@ -302,15 +303,15 @@ const SettingsManagement: React.FC = () => {
               <div className="space-y-4">
                 <div>
                   <label className={labelClass}>Chave PIX</label>
-                  <input type="text" value={settings.pix.pixKey} onChange={(e) => setSettings({...settings, pix: {...settings.pix, pixKey: e.target.value}})} className={inputClass} placeholder="email@exemplo.com ou telefone ou CNPJ" />
+                  <input type="text" value={settings.pix.pixKey} onChange={(e) => setSettings({...settings, pix: {...settings.pix, pixKey: sanitizeText(e.target.value)}})} className={inputClass} placeholder="email@exemplo.com ou telefone ou CNPJ" maxLength={100} />
                 </div>
                 <div>
                   <label className={labelClass}>Nome do Recebedor</label>
-                  <input type="text" value={settings.pix.pixMerchantName} onChange={(e) => setSettings({...settings, pix: {...settings.pix, pixMerchantName: e.target.value}})} className={inputClass} />
+                  <input type="text" value={settings.pix.pixMerchantName} onChange={(e) => setSettings({...settings, pix: {...settings.pix, pixMerchantName: sanitizeText(e.target.value)}})} className={inputClass} maxLength={100} />
                 </div>
                 <div>
                   <label className={labelClass}>Cidade do Recebedor</label>
-                  <input type="text" value={settings.pix.pixMerchantCity} onChange={(e) => setSettings({...settings, pix: {...settings.pix, pixMerchantCity: e.target.value}})} className={inputClass} />
+                  <input type="text" value={settings.pix.pixMerchantCity} onChange={(e) => setSettings({...settings, pix: {...settings.pix, pixMerchantCity: sanitizeText(e.target.value)}})} className={inputClass} maxLength={60} />
                 </div>
                 <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-blue-800 text-sm">

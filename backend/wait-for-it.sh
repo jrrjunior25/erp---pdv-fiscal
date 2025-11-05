@@ -20,7 +20,7 @@ USAGE
 }
 
 wait_for() {
-  for i in `seq $TIMEOUT` ; do
+  for i in $(seq $TIMEOUT) ; do
     nc -z "$HOST" "$PORT" > /dev/null 2>&1
     
     result=$?
@@ -71,7 +71,7 @@ do
   esac
 done
 
-if [ "$HOST" = "" -o "$PORT" = "" ]; then
+if [ "$HOST" = "" ] || [ "$PORT" = "" ]; then
   echoerr "Error: you need to provide a host and port to test."
   usage 2
 fi

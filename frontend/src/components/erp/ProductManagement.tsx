@@ -5,6 +5,7 @@ import ConfirmationModal from './ConfirmationModal';
 import LabelPrintModal from './LabelPrintModal';
 import * as productEnrichmentService from '@services/productEnrichmentService';
 import * as tokenService from '@services/tokenService';
+import { sanitizeText } from '@utils/sanitize';
 
 const PrinterIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
@@ -57,11 +58,11 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ products, onAdd, 
   const handleSave = async (data: any) => {
     // Prepare product data with all fields
     const productData: any = {
-      code: data.code?.trim(),
-      name: data.name?.trim(),
-      barcode: data.barcode?.trim() || null,
-      description: data.description?.trim() || null,
-      category: data.category?.trim(),
+      code: sanitizeText(data.code?.trim() || ''),
+      name: sanitizeText(data.name?.trim() || ''),
+      barcode: data.barcode?.trim() ? sanitizeText(data.barcode.trim()) : null,
+      description: data.description?.trim() ? sanitizeText(data.description.trim()) : null,
+      category: sanitizeText(data.category?.trim() || ''),
       unit: data.unit?.trim() || 'UN',
       price: parseFloat(data.price),
       cost: data.cost ? parseFloat(data.cost) : null,

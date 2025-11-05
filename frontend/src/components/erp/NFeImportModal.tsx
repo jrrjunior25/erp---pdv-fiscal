@@ -77,9 +77,9 @@ const NFeImportModal: React.FC<NFeImportModalProps> = ({ onClose, onImport, onCo
             reader.onload = async (e) => {
                 try {
                     const xmlContent = e.target?.result as string;
-                    console.log('[NFe Frontend] Parsing XML, length:', xmlContent.length);
+                    console.log('[NFe Frontend] Parsing XML');
                     const result = await apiClient.post('/inventory/parse-nfe', { xmlContent });
-                    console.log('[NFe Frontend] XML parsed successfully:', result);
+                    console.log('[NFe Frontend] XML parsed successfully');
                     setParsedData(result);
                     setShowConfirmation(true);
                 } catch (err) {
@@ -104,10 +104,10 @@ const NFeImportModal: React.FC<NFeImportModalProps> = ({ onClose, onImport, onCo
         setIsProcessing(true);
         setError(null);
         try {
-            console.log('[NFe Frontend] Confirming import with data:', parsedData);
+            console.log('[NFe Frontend] Confirming import');
             // Step 2: Confirm and save to database
             const result = await apiClient.post('/inventory/confirm-nfe', { parsedData });
-            console.log('[NFe Frontend] Import confirmed, result:', result);
+            console.log('[NFe Frontend] Import confirmed');
             setShowConfirmation(false);
             onComplete(result);
         } catch (err) {

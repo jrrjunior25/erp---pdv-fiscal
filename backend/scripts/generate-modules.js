@@ -31,9 +31,13 @@ function generateModule(moduleConfig) {
   const { name, model, fields } = moduleConfig;
   const srcPath = path.join(__dirname, 'src', name);
   
-  // Create directory
-  if (!fs.existsSync(srcPath)) {
-    fs.mkdirSync(srcPath, { recursive: true });
+  try {
+    if (!fs.existsSync(srcPath)) {
+      fs.mkdirSync(srcPath, { recursive: true });
+    }
+  } catch (error) {
+    console.error(`Error creating directory ${name}:`, error.message);
+    return;
   }
   
   const dtoPath = path.join(srcPath, 'dto');
@@ -185,13 +189,15 @@ ${fields.map(field => `  @IsOptional()\n  ${field.includes('Points') || field.in
 }
 `;
 
-  // Write files
-  fs.writeFileSync(path.join(srcPath, `${name}.controller.ts`), controllerContent);
-  fs.writeFileSync(path.join(srcPath, `${name}.service.ts`), serviceContent);
-  fs.writeFileSync(path.join(srcPath, `${name}.module.ts`), moduleContent);
-  fs.writeFileSync(path.join(dtoPath, `${model}.dto.ts`), dtoContent);
-  
-  console.log(`✓ Generated ${name} module`);
+  try {
+    fs.writeFileSync(path.join(srcPath, `${name}.controller.ts`), controllerContent);
+    fs.writeFileSync(path.join(srcPath, `${name}.service.ts`), serviceContent);
+    fs.writeFileSync(path.join(srcPath, `${name}.module.ts`), moduleContent);
+    fs.writeFileSync(path.join(dtoPath, `${model}.dto.ts`), dtoContent);
+    console.log(`✓ Generated ${name} module`);
+  } catch (error) {
+    console.error(`Error writing files for ${name}:`, error.message);
+  }
 }
 
 modules.forEach(generateModule);

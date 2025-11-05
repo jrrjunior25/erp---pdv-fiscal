@@ -63,8 +63,8 @@ async function seedFiscalConfig() {
     console.log('\n📚 Consulte MODULO-FISCAL-NFCE-PIX.md para mais informações.\n');
     
   } catch (error) {
-    console.error('❌ Erro ao criar configuração fiscal:', error.message);
-    throw error;
+    console.error('❌ Erro ao criar configuração fiscal:', error.message || error);
+    process.exit(1);
   }
 }
 

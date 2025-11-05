@@ -96,7 +96,7 @@ export class ShiftsService {
 
   async openShift(data: { openingBalance: number; userId: string; userName: string }) {
     try {
-      console.log('[Shifts] Received open shift request:', JSON.stringify(data, null, 2));
+      this.logger.log('Received open shift request');
 
       // Validate input
       if (!data.userId || !data.userName) {
@@ -104,7 +104,7 @@ export class ShiftsService {
       }
 
       if (typeof data.openingBalance !== 'number' || isNaN(data.openingBalance)) {
-        throw new Error(`Saldo de abertura inválido: ${data.openingBalance}`);
+        throw new Error('Saldo de abertura inválido');
       }
 
       // Verify user exists
@@ -113,7 +113,7 @@ export class ShiftsService {
       });
 
       if (!user) {
-        throw new Error(`Usuário não encontrado: ${data.userId}`);
+        throw new Error('Usuário não encontrado');
       }
 
       // Check if there's already an open shift
@@ -130,10 +130,9 @@ export class ShiftsService {
       });
 
       if (existingOpenShift) {
-        console.log('[Shifts] Found existing open shift:', existingOpenShift.number);
+        this.logger.warn('Found existing open shift');
         throw new Error(
-          `Já existe um turno aberto (#${existingOpenShift.number}) pelo usuário ${existingOpenShift.user.name}. ` +
-          `Por favor, feche o turno antes de abrir um novo.`
+          'Já existe um turno aberto. Por favor, feche o turno antes de abrir um novo.'
         );
       }
 
@@ -143,7 +142,7 @@ export class ShiftsService {
       });
       const nextNumber = (lastShift?.number || 0) + 1;
 
-      console.log(`[Shifts] Opening shift #${nextNumber} for ${data.userName} with balance: R$ ${data.openingBalance}`);
+      this.logger.log('Opening new shift');
 
       const newShift = await this.prisma.shift.create({
         data: {
@@ -155,10 +154,10 @@ export class ShiftsService {
         },
       });
 
-      console.log('[Shifts] Shift created successfully:', newShift.id);
+      this.logger.log('Shift created successfully');
       return newShift;
     } catch (error) {
-      console.error('[Shifts] Error opening shift:', error.message || error);
+      this.logger.error('Error opening shift');
       throw new Error(error.message || 'Erro ao abrir turno');
     }
   }
@@ -170,7 +169,7 @@ export class ShiftsService {
         throw new Error('Nenhum turno aberto encontrado');
       }
 
-      console.log(`[Shifts] Closing shift #${currentShift.number} with closing balance: ${data.closingBalance}`);
+      this.logger.log('Closing shift');
 
       return await this.prisma.shift.update({
         where: { id: currentShift.id },
@@ -181,7 +180,7 @@ export class ShiftsService {
         },
       });
     } catch (error) {
-      console.error('[Shifts] Error closing shift:', error);
+      this.logger.error('Error closing shift');
       throw new Error(error.message || 'Erro ao fechar turno');
     }
   }
@@ -199,7 +198,7 @@ export class ShiftsService {
       throw new Error('Shift is already closed');
     }
 
-    console.log(`[Shifts] Admin closing shift #${shift.number} with closing balance: ${closingBalance}`);
+    this.logger.log('Admin closing shift');
 
     return this.prisma.shift.update({
       where: { id },

@@ -53,7 +53,8 @@ async function testCRUD() {
     console.log('=== TODOS OS MÓDULOS FUNCIONANDO CORRETAMENTE ===');
     
   } catch (error) {
-    console.error('❌ ERRO:', error.message);
+    console.error('❌ ERRO:', error.message || error);
+    process.exit(1);
   } finally {
     await prisma.$disconnect();
   }

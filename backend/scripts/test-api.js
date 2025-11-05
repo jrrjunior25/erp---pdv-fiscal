@@ -1,8 +1,9 @@
 const http = require('http');
+require('dotenv').config();
 
 const data = JSON.stringify({
-  email: 'admin@pdv.com',
-  password: 'adm123'
+  email: process.env.TEST_EMAIL || 'admin@pdv.com',
+  password: process.env.TEST_PASSWORD || 'adm123'
 });
 
 const options = {

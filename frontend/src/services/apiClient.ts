@@ -29,13 +29,13 @@ const apiClient = {
     }
 
     try {
-      console.log(`[apiClient] ${method} ${API_BASE_URL}${endpoint}`, body);
+      console.log(`[apiClient] ${method} request`);
       const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
       console.log(`[apiClient] Response status:`, response.status);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: response.statusText }));
-        console.error(`[apiClient] Error response:`, errorData);
+        console.error('[apiClient] Error response received');
         const errorMsg = errorData.message || errorData.error || response.statusText;
         throw new Error(Array.isArray(errorMsg) ? errorMsg.join(', ') : errorMsg);
       }
@@ -53,11 +53,11 @@ const apiClient = {
       }
       
       const data = JSON.parse(text);
-      console.log(`[apiClient] Success response:`, data);
+      console.log('[apiClient] Success response received');
       return data;
 
     } catch (error) {
-      console.error(`[apiClient] Error on ${method} ${endpoint}:`, error);
+      console.error('[apiClient] Request error');
       throw error;
     }
   },

@@ -32,7 +32,7 @@ export class ProductEnrichmentService {
    */
   async searchByBarcode(barcode: string): Promise<GTINProductInfo | null> {
     try {
-      this.logger.log(`[searchByBarcode] Buscando produto por GTIN: ${barcode}`);
+      this.logger.log('[searchByBarcode] Buscando produto por GTIN');
       
       // Tenta API pública Cosmos (Bluesoft) - Endpoint correto
       try {
@@ -44,7 +44,7 @@ export class ProductEnrichmentService {
           },
         });
 
-        this.logger.log(`[searchByBarcode] Resposta da API Cosmos: ${JSON.stringify(response.data)}`);
+        this.logger.log('[searchByBarcode] Resposta da API Cosmos recebida');
 
         if (response.data) {
           const product = {
@@ -55,14 +55,14 @@ export class ProductEnrichmentService {
             thumbnail: response.data.thumbnail || response.data.imagem || null,
           };
           
-          this.logger.log(`[searchByBarcode] Produto encontrado: ${product.description}`);
+          this.logger.log('[searchByBarcode] Produto encontrado');
           return product;
         }
       } catch (apiError) {
         if (apiError.response) {
-          this.logger.warn(`[searchByBarcode] API Cosmos retornou erro ${apiError.response.status}: ${apiError.response.statusText}`);
+          this.logger.warn('[searchByBarcode] API Cosmos retornou erro');
         } else {
-          this.logger.warn(`[searchByBarcode] Erro ao conectar na API Cosmos: ${apiError.message}`);
+          this.logger.warn('[searchByBarcode] Erro ao conectar na API Cosmos');
         }
       }
 
@@ -72,10 +72,10 @@ export class ProductEnrichmentService {
         return await this.suggestProductByBarcodeWithAI(barcode);
       }
 
-      this.logger.warn(`[searchByBarcode] Nenhuma fonte retornou dados para ${barcode}`);
+      this.logger.warn('[searchByBarcode] Nenhuma fonte retornou dados');
       return null;
     } catch (error) {
-      this.logger.error(`[searchByBarcode] Erro ao buscar produto: ${error.message}`);
+      this.logger.error('[searchByBarcode] Erro ao buscar produto');
       return null;
     }
   }
@@ -119,7 +119,7 @@ Responda em formato JSON:
 
       return null;
     } catch (error) {
-      console.error('[ProductEnrichment] Erro ao usar IA:', error.message);
+      this.logger.error('[ProductEnrichment] Erro ao usar IA');
       return null;
     }
   }
@@ -137,7 +137,7 @@ Responda em formato JSON:
     origem?: string;
   } | null> {
     if (!this.geminiApiKey) {
-      console.log('[ProductEnrichment] Gemini API key não configurada');
+      this.logger.warn('[ProductEnrichment] Gemini API key não configurada');
       return null;
     }
 
@@ -172,7 +172,7 @@ Responda APENAS com JSON válido no formato:
       const response = await result.response;
       const text = response.text();
       
-      console.log('[ProductEnrichment] Resposta da IA:', text);
+      this.logger.log('[ProductEnrichment] Resposta da IA recebida');
 
       // Extrai JSON da resposta
       const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -191,7 +191,7 @@ Responda APENAS com JSON válido no formato:
 
       return null;
     } catch (error) {
-      console.error('[ProductEnrichment] Erro ao sugerir dados fiscais:', error.message);
+      this.logger.error('[ProductEnrichment] Erro ao sugerir dados fiscais');
       return null;
     }
   }
@@ -234,7 +234,7 @@ Responda APENAS com um array JSON:
 
       return [];
     } catch (error) {
-      console.error('[ProductEnrichment] Erro ao buscar NCM:', error.message);
+      this.logger.error('[ProductEnrichment] Erro ao buscar NCM');
       return [];
     }
   }
@@ -247,14 +247,14 @@ Responda APENAS com um array JSON:
     name?: string;
     category?: string;
   }): Promise<any> {
-    this.logger.log(`[enrichProductData] Iniciando com: ${JSON.stringify(data)}`);
+    this.logger.log('[enrichProductData] Iniciando enriquecimento');
     const enrichedData: any = {};
 
     // Estratégia 1: Se tem código de barras, busca informações
     if (data.barcode) {
-      this.logger.log(`[enrichProductData] Estratégia 1: Buscando por barcode: ${data.barcode}`);
+      this.logger.log('[enrichProductData] Estratégia 1: Buscando por barcode');
       const productInfo = await this.searchByBarcode(data.barcode);
-      this.logger.log(`[enrichProductData] Resultado barcode: ${JSON.stringify(productInfo)}`);
+      this.logger.log('[enrichProductData] Resultado barcode obtido');
       if (productInfo && productInfo.description) {
         enrichedData.name = productInfo.description;
         enrichedData.brand = productInfo.brand;
@@ -267,12 +267,12 @@ Responda APENAS com um array JSON:
     // Estratégia 2: Busca dados fiscais com IA (sempre executa se tiver descrição)
     const description = data.name || enrichedData.name;
     if (description) {
-      this.logger.log(`[enrichProductData] Estratégia 2: Buscando dados fiscais para: ${description}`);
+      this.logger.log('[enrichProductData] Estratégia 2: Buscando dados fiscais');
       const fiscalData = await this.suggestFiscalDataByDescription(
         description,
         data.category,
       );
-      this.logger.log(`[enrichProductData] Resultado fiscal: ${JSON.stringify(fiscalData)}`);
+      this.logger.log('[enrichProductData] Resultado fiscal obtido');
       if (fiscalData) {
         // Mescla dados fiscais, mas não sobrescreve NCM se já tiver um mais específico
         if (!enrichedData.ncm || !fiscalData.ncm) {
@@ -285,7 +285,7 @@ Responda APENAS com um array JSON:
       }
     }
 
-    this.logger.log(`[enrichProductData] Retornando: ${JSON.stringify(enrichedData)}`);
+    this.logger.log('[enrichProductData] Enriquecimento concluído');
     return enrichedData;
   }
 }

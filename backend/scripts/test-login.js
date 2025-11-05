@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const { PrismaClient } = require('@prisma/client');
+require('dotenv').config();
 
 const prisma = new PrismaClient();
 
@@ -7,8 +8,8 @@ async function testLogin() {
   try {
     console.log('Testando login...\n');
     
-    const email = 'admin@pdv.com';
-    const password = 'adm123';
+    const email = process.env.TEST_EMAIL || 'admin@pdv.com';
+    const password = process.env.TEST_PASSWORD || 'adm123';
     
     console.log(`Buscando usuário: ${email}`);
     const user = await prisma.user.findUnique({
@@ -44,7 +45,7 @@ async function testLogin() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
-    }).catch(err => {
+    }).catch(() => {
       console.log('ERRO: Backend não está respondendo!');
       console.log('Certifique-se de que o backend está rodando na porta 3001\n');
       return null;
