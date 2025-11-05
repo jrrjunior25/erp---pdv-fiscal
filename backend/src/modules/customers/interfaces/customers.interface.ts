@@ -6,7 +6,6 @@ export interface Customer {
   phone?: string;
   address?: string;
   loyaltyPoints: number;
-  active: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -15,7 +14,6 @@ export interface CustomerFilters {
   name?: string;
   document?: string;
   email?: string;
-  active?: boolean;
 }
 
 export interface CustomerStats {

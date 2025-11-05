@@ -20,6 +20,7 @@ import { ReturnsModule } from './modules/returns/returns.module';
 import { CommissionsModule } from './modules/commissions/commissions.module';
 import { QuotationsModule } from './modules/quotations/quotations.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { ReportsModule } from './modules/reports/reports.module';
 import { BackupModule } from './modules/backup/backup.module';
 import { AppController } from './app.controller';
 import { HealthController } from './common/health/health.controller';
@@ -52,6 +53,7 @@ import { HealthController } from './common/health/health.controller';
     CommissionsModule,
     QuotationsModule,
     SettingsModule,
+    ReportsModule,
     BackupModule,
   ],
   controllers: [AppController, HealthController],

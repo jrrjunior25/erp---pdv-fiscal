@@ -298,7 +298,7 @@ export class SalesService {
       totalRevenue,
       averageTicket,
       topProducts,
-      paymentMethodStats,
+      paymentMethodStats: paymentStats,
     };
   }
 
