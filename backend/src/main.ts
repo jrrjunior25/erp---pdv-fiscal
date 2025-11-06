@@ -4,17 +4,27 @@ import { ValidationPipe } from '@nestjs/common';
 import { WinstonModule } from 'nest-winston';
 import { winstonConfig } from './common/logger/winston.config';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import * as helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: WinstonModule.createLogger(winstonConfig),
-    cors: {
-      origin: process.env.NODE_ENV === 'production'
-        ? process.env.FRONTEND_URL || 'https://seu-dominio.com'
-        : ['http://localhost:5173', 'http://localhost:3000'],
-      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-      credentials: true,
-    },
+  });
+
+  // Security headers
+  app.use(helmet({
+    contentSecurityPolicy: process.env.NODE_ENV === 'production',
+    crossOriginEmbedderPolicy: false,
+  }));
+
+  // CORS configuration
+  app.enableCors({
+    origin: process.env.NODE_ENV === 'production'
+      ? process.env.FRONTEND_URL?.split(',') || false
+      : ['http://localhost:5173', 'http://localhost:3000'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    credentials: true,
+    optionsSuccessStatus: 200,
   });
 
   // Add Global Exception Filter for secure error handling

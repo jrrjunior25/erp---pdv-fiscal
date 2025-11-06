@@ -128,6 +128,7 @@ model Sale {
   customer      Customer?     @relation(fields: [customerId], references: [id])
   seller        User?         @relation("SellerSales", fields: [sellerId], references: [id])
   items         SaleItem[]
+  payments      SalePayment[]
   nfe           NFe?          @relation(fields: [nfeId], references: [id])
   returns       SaleReturn[]
   commissions   Commission[]
@@ -371,4 +372,22 @@ model InventoryAlert {
   @@index([resolved])
   @@index([createdAt])
   @@index([type])
+}
+
+model SalePayment {
+  id            String   @id @default(uuid())
+  saleId        String
+  method        String   // Dinheiro, PIX, Credito, Debito, Fiado
+  amount        Float
+  receivedAmount Float?  // Para dinheiro
+  changeGiven   Float?   // Para dinheiro
+  pixTxId       String?  // Para PIX
+  cardAuthCode  String?  // Para cartão
+  installments  Int?     // Para crédito parcelado
+  createdAt     DateTime @default(now())
+  sale          Sale     @relation(fields: [saleId], references: [id])
+
+  @@index([saleId])
+  @@index([method])
+  @@index([createdAt])
 }

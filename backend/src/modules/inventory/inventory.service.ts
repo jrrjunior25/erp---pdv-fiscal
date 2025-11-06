@@ -35,7 +35,7 @@ export class InventoryService {
     });
 
     let result = products.map(product => {
-      const status = product.stock === 0 ? 'out' : 
+      const status: 'ok' | 'low' | 'out' | 'overstock' = product.stock === 0 ? 'out' : 
                     product.stock <= product.minStock ? 'low' : 'ok';
       
       return {

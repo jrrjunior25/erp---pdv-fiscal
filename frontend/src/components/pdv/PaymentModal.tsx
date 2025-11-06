@@ -138,6 +138,25 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ total, onFinalize, onCancel
                     </div>
                 );
             case 'Credito':
+                return (
+                    <div className="space-y-4">
+                        <div>
+                            <label className="text-sm text-brand-subtle">Valor a Pagar</label>
+                            <input type="number" value={paymentValue} onChange={e => setPaymentValue(e.target.value)} className="w-full bg-brand-primary p-2 rounded-md border border-brand-border text-lg text-right" />
+                        </div>
+                        <div>
+                            <label className="text-sm text-brand-subtle">Parcelas</label>
+                            <select className="w-full bg-brand-primary p-2 rounded-md border border-brand-border">
+                                <option value="1">1x - À vista</option>
+                                <option value="2">2x sem juros</option>
+                                <option value="3">3x sem juros</option>
+                                <option value="6">6x sem juros</option>
+                                <option value="12">12x sem juros</option>
+                            </select>
+                        </div>
+                        <button onClick={handleCardPayment} className="w-full py-3 bg-blue-600 rounded-md text-white font-semibold hover:bg-blue-500">Processar Cartão de Crédito</button>
+                    </div>
+                );
             case 'Debito':
                 return (
                     <div className="space-y-4">
@@ -145,7 +164,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ total, onFinalize, onCancel
                             <label className="text-sm text-brand-subtle">Valor a Pagar</label>
                             <input type="number" value={paymentValue} onChange={e => setPaymentValue(e.target.value)} className="w-full bg-brand-primary p-2 rounded-md border border-brand-border text-lg text-right" />
                         </div>
-                         <button onClick={handleCardPayment} className="w-full py-3 bg-blue-600 rounded-md text-white font-semibold hover:bg-blue-500">Processar Cartão</button>
+                        <button onClick={handleCardPayment} className="w-full py-3 bg-blue-600 rounded-md text-white font-semibold hover:bg-blue-500">Processar Cartão de Débito</button>
                     </div>
                 );
             case 'PIX':

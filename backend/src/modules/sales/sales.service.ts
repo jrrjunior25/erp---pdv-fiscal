@@ -27,6 +27,7 @@ export class SalesService {
             product: { select: { name: true } }
           }
         },
+        payments: true,
         customer: { select: { name: true } },
         shift: { select: { number: true } }
       },
@@ -55,6 +56,7 @@ export class SalesService {
             product: { select: { name: true } }
           }
         },
+        payments: true,
         customer: { select: { name: true } },
         shift: { select: { number: true } }
       },
@@ -76,6 +78,12 @@ export class SalesService {
       total: sale.total,
       discount: sale.discount,
       paymentMethod: sale.paymentMethod,
+      payments: sale.payments.map(payment => ({
+        method: payment.method,
+        amount: payment.amount,
+        installments: payment.installments,
+        changeGiven: payment.changeGiven
+      })),
       status: sale.status,
       shiftNumber: sale.shift?.number
     }));
@@ -90,6 +98,7 @@ export class SalesService {
             product: true
           }
         },
+        payments: true,
         customer: true,
         shift: true
       },
@@ -124,7 +133,7 @@ export class SalesService {
   async createSale(saleData: any) {
     this.logger.log('Creating sale with data:', JSON.stringify(saleData, null, 2));
 
-    this.validateSaleData(saleData);
+    await this.validateSaleData(saleData);
 
     // Get the next sale number
     const lastSale = await this.prisma.sale.findFirst({
@@ -132,7 +141,7 @@ export class SalesService {
     });
     const nextNumber = (lastSale?.number || 0) + 1;
 
-    // Create sale with items
+    // Create sale with items and payments
     const sale = await this.prisma.sale.create({
       data: {
         number: nextNumber,
@@ -140,7 +149,7 @@ export class SalesService {
         shiftId: saleData.shiftId,
         total: saleData.total,
         discount: saleData.discount || 0,
-        paymentMethod: saleData.paymentMethod,
+        paymentMethod: saleData.payments?.[0]?.method || saleData.paymentMethod,
         status: 'COMPLETED',
         items: {
           create: saleData.items.map((item: any) => ({
@@ -151,6 +160,20 @@ export class SalesService {
             total: item.total,
           })),
         },
+        payments: {
+          create: saleData.payments?.map((payment: any) => ({
+            method: payment.method,
+            amount: payment.amount,
+            receivedAmount: payment.receivedAmount,
+            changeGiven: payment.changeGiven,
+            pixTxId: payment.pixTxId,
+            cardAuthCode: payment.cardAuthCode,
+            installments: payment.installments,
+          })) || [{
+            method: saleData.paymentMethod,
+            amount: saleData.total,
+          }],
+        },
       },
       include: {
         items: {
@@ -158,6 +181,7 @@ export class SalesService {
             product: true,
           },
         },
+        payments: true,
         customer: true,
       },
     });
@@ -262,20 +286,64 @@ export class SalesService {
     };
   }
 
-  private validateSaleData(saleData: any) {
+  private async validateSaleData(saleData: any) {
     if (!saleData.shiftId) {
       throw new BadRequestException(SALES_CONSTANTS.VALIDATION_MESSAGES.SHIFT_REQUIRED);
     }
     if (!saleData.items || saleData.items.length === 0) {
       throw new BadRequestException(SALES_CONSTANTS.VALIDATION_MESSAGES.ITEMS_REQUIRED);
     }
-    if (!saleData.paymentMethod) {
+    if (!saleData.paymentMethod && !saleData.payments) {
       throw new BadRequestException(SALES_CONSTANTS.VALIDATION_MESSAGES.PAYMENT_METHOD_REQUIRED);
     }
 
     for (const item of saleData.items) {
       if (!item.productId) {
         throw new BadRequestException(SALES_CONSTANTS.VALIDATION_MESSAGES.PRODUCT_ID_REQUIRED);
+      }
+    }
+
+    // Validar pagamentos
+    const payments = saleData.payments || [{ method: saleData.paymentMethod, amount: saleData.total }];
+    
+    for (const payment of payments) {
+      // Validar fiado
+      if (payment.method === 'Fiado') {
+        if (!saleData.customerId) {
+          throw new BadRequestException('Cliente é obrigatório para vendas a prazo');
+        }
+        
+        const customer = await this.prisma.customer.findUnique({
+          where: { id: saleData.customerId },
+          select: { id: true, name: true, document: true }
+        });
+        
+        if (!customer) {
+          throw new BadRequestException('Cliente não encontrado');
+        }
+        
+        // Simular limite de crédito (em produção, viria do banco)
+        const creditLimit = 1000; // R$ 1.000 de limite padrão
+        const currentBalance = 0; // Buscar saldo atual do cliente
+        const availableCredit = creditLimit - currentBalance;
+        
+        if (payment.amount > availableCredit) {
+          throw new BadRequestException(`Limite de crédito insuficiente. Disponível: R$ ${availableCredit.toFixed(2)}`);
+        }
+      }
+      
+      // Validar parcelamento
+      if (payment.method === 'Credito' && payment.installments) {
+        if (payment.installments < 1 || payment.installments > 12) {
+          throw new BadRequestException('Número de parcelas deve ser entre 1 e 12');
+        }
+        
+        const minInstallmentValue = 10; // Valor mínimo da parcela
+        const installmentValue = payment.amount / payment.installments;
+        
+        if (installmentValue < minInstallmentValue) {
+          throw new BadRequestException(`Valor da parcela muito baixo. Mínimo: R$ ${minInstallmentValue.toFixed(2)}`);
+        }
       }
     }
   }
