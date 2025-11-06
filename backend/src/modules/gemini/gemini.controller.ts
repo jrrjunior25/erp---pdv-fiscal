@@ -9,19 +9,34 @@ export class GeminiController {
 
     @Post('insights')
     async getInsights(@Body() body: { salesHistory: any[], products: any[] }) {
-        const insights = await this.geminiService.generateBusinessInsights(body.salesHistory, body.products);
-        return { insights };
+        try {
+            const insights = await this.geminiService.generateBusinessInsights(body.salesHistory || [], body.products || []);
+            return { insights };
+        } catch (error) {
+            console.error('Gemini insights error:', error);
+            return { insights: 'Erro ao gerar insights. Verifique se a API Key do Gemini está configurada.' };
+        }
     }
 
     @Post('query')
     async getQueryAnswer(@Body() body: { query: string, salesHistory: any[], products: any[] }) {
-        const answer = await this.geminiService.answerBusinessQuery(body.query, body.salesHistory, body.products);
-        return { answer };
+        try {
+            const answer = await this.geminiService.answerBusinessQuery(body.query || '', body.salesHistory || [], body.products || []);
+            return { answer };
+        } catch (error) {
+            console.error('Gemini query error:', error);
+            return { answer: 'Erro ao processar consulta. Verifique se a API Key do Gemini está configurada.' };
+        }
     }
 
     @Post('parse-command')
     async parseCommand(@Body() body: { command: string, products: any[] }) {
-        const items = await this.geminiService.parseAddToCartCommand(body.command, body.products);
-        return { items };
+        try {
+            const items = await this.geminiService.parseAddToCartCommand(body.command || '', body.products || []);
+            return { items };
+        } catch (error) {
+            console.error('Gemini parse command error:', error);
+            return { items: [] };
+        }
     }
 }

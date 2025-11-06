@@ -8,19 +8,20 @@ datasource db {
 }
 
 model User {
-  id                String       @id @default(uuid())
+  id                String          @id @default(uuid())
   name              String
-  email             String       @unique
+  email             String          @unique
   password          String
-  role              String       @default("USER")
-  active            Boolean      @default(true)
-  commissionRate    Float        @default(0)
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  role              String          @default("USER")
+  active            Boolean         @default(true)
+  commissionRate    Float           @default(0)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
   shifts            Shift[]
-  sales             Sale[]       @relation("SellerSales")
+  sales             Sale[]          @relation("SellerSales")
   commissions       Commission[]
   quotations        Quotation[]
+  stockMovements    StockMovement[]
 
   @@index([email])
   @@index([active])
@@ -54,11 +55,13 @@ model Product {
   aliqPis       Float?         // Alíquota PIS (%)
   aliqCofins    Float?         // Alíquota COFINS (%)
   
-  active        Boolean        @default(true)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  active        Boolean          @default(true)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
   purchaseItems PurchaseItem[]
   saleItems     SaleItem[]
+  stockMovements StockMovement[]
+  inventoryAlerts InventoryAlert[]
 
   @@index([code])
   @@index([barcode])
@@ -328,4 +331,44 @@ model QuotationItem {
   total       Float
   createdAt   DateTime  @default(now())
   quotation   Quotation @relation(fields: [quotationId], references: [id])
+}
+
+model StockMovement {
+  id            String   @id @default(uuid())
+  productId     String
+  type          String   // IN, OUT, ADJUSTMENT, TRANSFER
+  quantity      Int
+  previousStock Int
+  newStock      Int
+  reason        String
+  reference     String?  // ID da venda, compra, etc.
+  userId        String
+  location      String?
+  createdAt     DateTime @default(now())
+  product       Product  @relation(fields: [productId], references: [id])
+  user          User     @relation(fields: [userId], references: [id])
+
+  @@index([productId])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([type])
+}
+
+model InventoryAlert {
+  id           String   @id @default(uuid())
+  productId    String
+  type         String   // LOW_STOCK, OUT_OF_STOCK, OVERSTOCK
+  message      String
+  currentStock Int
+  threshold    Int
+  resolved     Boolean  @default(false)
+  resolvedAt   DateTime?
+  resolvedBy   String?
+  createdAt    DateTime @default(now())
+  product      Product  @relation(fields: [productId], references: [id])
+
+  @@index([productId])
+  @@index([resolved])
+  @@index([createdAt])
+  @@index([type])
 }

@@ -1,12 +1,26 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { StockMovementService } from './services/stock-movement.service';
+import { InventoryAlertsService } from './services/inventory-alerts.service';
+import { InventoryItem, InventoryReport, StockValuation } from './interfaces/inventory.interface';
+import { UpdateStockDto, InventoryCountDto, StockTransferDto, InventoryFiltersDto } from './dto/inventory.dto';
 
 @Injectable()
 export class InventoryService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private stockMovementService: StockMovementService,
+    private alertsService: InventoryAlertsService
+  ) {}
 
-  async getLevels() {
+  async getLevels(filters?: InventoryFiltersDto): Promise<InventoryItem[]> {
     const products = await this.prisma.product.findMany({
+      where: {
+        active: true,
+        ...(filters?.productId && { id: filters.productId }),
+        ...(filters?.category && { category: filters.category }),
+        // Filtro lowStock será aplicado após a consulta
+      },
       select: {
         id: true,
         name: true,
@@ -14,87 +28,158 @@ export class InventoryService {
         stock: true,
         minStock: true,
         category: true,
+        cost: true,
+        updatedAt: true
       },
+      orderBy: { name: 'asc' }
+    });
+
+    let result = products.map(product => {
+      const status = product.stock === 0 ? 'out' : 
+                    product.stock <= product.minStock ? 'low' : 'ok';
+      
+      return {
+        id: product.id,
+        productId: product.id,
+        productName: product.name,
+        productCode: product.code,
+        quantity: product.stock,
+        minStock: product.minStock,
+        category: product.category || 'Sem categoria',
+        lastMovement: product.updatedAt,
+        status,
+        value: product.stock * (product.cost || 0)
+      };
+    });
+
+    if (filters?.lowStock) {
+      result = result.filter(item => item.status === 'low' || item.status === 'out');
+    }
+
+    return result;
+  }
+
+  async getMovements(filters?: InventoryFiltersDto) {
+    return this.stockMovementService.getMovements({
+      productId: filters?.productId,
+      dateFrom: filters?.dateFrom,
+      dateTo: filters?.dateTo,
+      limit: 100
+    });
+  }
+
+  async updateStock(data: UpdateStockDto, userId: string) {
+    await this.stockMovementService.createMovement({
+      ...data,
+      userId
+    });
+    
+    return { message: 'Estoque atualizado com sucesso' };
+  }
+
+  async transferStock(data: StockTransferDto, userId: string) {
+    await this.stockMovementService.createMovement({
+      productId: data.productId,
+      type: 'TRANSFER',
+      quantity: data.quantity,
+      reason: data.reason || `Transferência: ${data.fromLocation} → ${data.toLocation}`,
+      userId,
+      location: data.fromLocation
+    });
+    
+    return { message: 'Transferência realizada com sucesso' };
+  }
+
+  async getAlerts() {
+    return this.alertsService.checkAlerts();
+  }
+
+  async getLowStockProducts() {
+    return this.alertsService.getLowStockProducts();
+  }
+
+  async getInventoryReport(): Promise<InventoryReport> {
+    const products = await this.prisma.product.findMany({
+      where: { active: true },
+      select: { id: true, stock: true, minStock: true, cost: true }
+    });
+
+    const alerts = await this.getAlerts();
+    const movements = await this.getMovements();
+
+    return {
+      totalProducts: products.length,
+      totalValue: products.reduce((sum, p) => sum + (p.stock * (p.cost || 0)), 0),
+      lowStockItems: products.filter(p => p.stock <= p.minStock && p.minStock > 0).length,
+      outOfStockItems: products.filter(p => p.stock === 0).length,
+      topMovements: movements.slice(0, 10),
+      alerts
+    };
+  }
+
+  async getStockValuation(): Promise<StockValuation[]> {
+    const products = await this.prisma.product.findMany({
+      where: { active: true, stock: { gt: 0 } },
+      select: {
+        id: true,
+        name: true,
+        stock: true,
+        cost: true
+      },
+      orderBy: { name: 'asc' }
     });
 
     return products.map(product => ({
       productId: product.id,
       productName: product.name,
-      productCode: product.code,
       quantity: product.stock,
-      currentStock: product.stock,
-      minStock: product.minStock,
-      category: product.category || 'Sem categoria',
-      status: product.stock <= product.minStock ? 'low' : 'ok',
+      unitCost: product.cost || 0,
+      totalValue: product.stock * (product.cost || 0)
     }));
   }
 
-  async getMovements() {
-    // Retorna movimentações de estoque baseadas em vendas e compras
-    const sales = await this.prisma.saleItem.findMany({
-      include: {
-        product: true,
-        sale: true,
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-    });
-
-    const purchases = await this.prisma.purchaseItem.findMany({
-      include: {
-        product: true,
-        purchase: {
-          include: {
-            supplier: true,
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-    });
-
-    const saleMovements = sales.map(item => ({
-      id: `sale-${item.id}`,
-      productId: item.productId,
-      productName: item.product.name,
-      type: 'Venda',
-      quantityChange: -item.quantity,
-      timestamp: item.createdAt.toISOString(),
-      reason: `Venda #${item.sale.number}`,
-    }));
-
-    const purchaseMovements = purchases.map(item => ({
-      id: `purchase-${item.id}`,
-      productId: item.productId,
-      productName: item.product.name,
-      type: item.purchase.nfeKey ? 'Entrada (NF-e)' : 'Entrada (Compra)',
-      quantityChange: item.quantity,
-      timestamp: item.createdAt.toISOString(),
-      reason: `Compra #${item.purchase.number} - ${item.purchase.supplier.name}`,
-    }));
-
-    // Combine and sort by timestamp
-    const allMovements = [...saleMovements, ...purchaseMovements];
-    allMovements.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-
-    return allMovements.slice(0, 100);
-  }
-
-  async inventoryCount(counts: any[]) {
-    // Update stock based on physical count
-    for (const count of counts) {
-      await this.prisma.product.update({
-        where: { id: count.productId },
-        data: {
-          stock: count.counted,
-        },
+  async inventoryCount(data: InventoryCountDto, userId: string) {
+    const results = [];
+    
+    for (const item of data.items) {
+      const product = await this.prisma.product.findUnique({
+        where: { id: item.productId },
+        select: { id: true, name: true, stock: true }
+      });
+      
+      if (!product) {
+        throw new Error(`Produto ${item.productId} não encontrado`);
+      }
+      
+      const difference = item.counted - product.stock;
+      
+      if (difference !== 0) {
+        await this.stockMovementService.createMovement({
+          productId: item.productId,
+          type: 'ADJUSTMENT',
+          quantity: item.counted,
+          reason: `Contagem física - Diferença: ${difference}`,
+          userId,
+          location: item.location
+        });
+      }
+      
+      results.push({
+        productId: item.productId,
+        productName: product.name,
+        previousStock: product.stock,
+        counted: item.counted,
+        difference
       });
     }
 
     return {
-      message: 'Inventory count completed',
-      itemsCounted: counts.length,
+      message: 'Contagem de estoque concluída',
+      itemsCounted: data.items.length,
+      adjustments: results.filter(r => r.difference !== 0).length,
       date: new Date(),
+      results,
+      notes: data.notes
     };
   }
 

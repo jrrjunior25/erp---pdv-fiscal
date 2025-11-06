@@ -88,13 +88,6 @@ export class GeminiService implements OnModuleInit {
         
         try {
             return JSON.parse(text);
-        } catch (error) {
-            return [];
-        }
-
-        try {
-            const text = response.text();
-            return JSON.parse(text);
         } catch (e) {
             console.error("Failed to parse Gemini response:", e);
             return [];
