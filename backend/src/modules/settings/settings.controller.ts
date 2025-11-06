@@ -23,7 +23,7 @@ export class SettingsController {
     try {
       return await this.settingsService.updateSettings(data);
     } catch (error) {
-      throw new HttpException(SETTINGS_CONSTANTS.ERROR_MESSAGES.SETTINGS_UPDATE_ERROR, HttpStatus.BAD_REQUEST);
+      throw new HttpException(error.message || SETTINGS_CONSTANTS.ERROR_MESSAGES.SETTINGS_UPDATE_ERROR, HttpStatus.BAD_REQUEST);
     }
   }
 

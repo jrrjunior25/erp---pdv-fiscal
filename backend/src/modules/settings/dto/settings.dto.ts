@@ -71,6 +71,16 @@ export class PixSettingsDto {
   pixMerchantCity?: string;
 }
 
+export class CustomizationSettingsDto {
+  @IsString()
+  @IsOptional()
+  logoUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  wallpaperUrl?: string;
+}
+
 export class UpdateSettingsDto {
   @ValidateNested()
   @Type(() => CompanySettingsDto)
@@ -86,6 +96,11 @@ export class UpdateSettingsDto {
   @Type(() => PixSettingsDto)
   @IsOptional()
   pix?: PixSettingsDto;
+
+  @ValidateNested()
+  @Type(() => CustomizationSettingsDto)
+  @IsOptional()
+  customization?: CustomizationSettingsDto;
 }
 
 export class CertificateUploadDto {
