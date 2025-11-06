@@ -12,9 +12,21 @@ export class FiscalController {
   @Post('pix/generate')
   async generatePix(@Body() dto: GeneratePixDto) {
     try {
-      return await this.fiscalService.generatePixCharge(dto);
+      console.log('PIX Generate Request:', dto);
+      
+      if (!dto.amount || dto.amount <= 0) {
+        throw new HttpException('Valor deve ser maior que zero', HttpStatus.BAD_REQUEST);
+      }
+      
+      const result = await this.fiscalService.generatePixCharge(dto);
+      console.log('PIX Generated Successfully:', result.txId);
+      return result;
     } catch (error) {
-      throw new HttpException(FISCAL_CONSTANTS.ERROR_MESSAGES.PIX_ERROR, HttpStatus.BAD_REQUEST);
+      console.error('PIX Generation Error:', error.message);
+      throw new HttpException(
+        error.message || 'Erro ao gerar PIX',
+        HttpStatus.BAD_REQUEST
+      );
     }
   }
 

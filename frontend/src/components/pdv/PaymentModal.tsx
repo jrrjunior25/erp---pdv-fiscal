@@ -69,8 +69,15 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ total, onFinalize, onCancel
             }
         }
         
+        // Limitar valor ao restante
+        amount = Math.min(amount, amountRemaining);
+        
         setPayments(prev => [...prev, { method: selectedMethod, amount }]);
+        
+        // Reset states
         setReceivedValue('');
+        setPixQrCode('');
+        setPaymentValue('');
     };
     
     const handleCardPayment = () => {
@@ -134,7 +141,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ total, onFinalize, onCancel
                             <label className="text-sm text-brand-subtle">Valor Recebido</label>
                             <input type="number" value={receivedValue} onChange={e => setReceivedValue(e.target.value)} className="w-full bg-brand-primary p-2 rounded-md border border-brand-border text-lg text-right" placeholder="0,00" autoFocus />
                         </div>
-                        <button onClick={handleAddPayment} className="w-full py-2 bg-blue-600 rounded-md text-white font-semibold hover:bg-blue-500">Adicionar Pagamento</button>
+                        <button 
+                            onClick={handleAddPayment} 
+                            disabled={!paymentValue || !receivedValue || parseFloat(receivedValue) < parseFloat(paymentValue)}
+                            className="w-full py-2 bg-blue-600 rounded-md text-white font-semibold hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Adicionar Pagamento
+                        </button>
                     </div>
                 );
             case 'Credito':
@@ -154,7 +167,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ total, onFinalize, onCancel
                                 <option value="12">12x sem juros</option>
                             </select>
                         </div>
-                        <button onClick={handleCardPayment} className="w-full py-3 bg-blue-600 rounded-md text-white font-semibold hover:bg-blue-500">Processar Cartão de Crédito</button>
+                        <button 
+                            onClick={handleCardPayment} 
+                            disabled={!paymentValue || parseFloat(paymentValue) <= 0}
+                            className="w-full py-3 bg-blue-600 rounded-md text-white font-semibold hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Processar Cartão de Crédito
+                        </button>
                     </div>
                 );
             case 'Debito':
@@ -164,7 +183,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ total, onFinalize, onCancel
                             <label className="text-sm text-brand-subtle">Valor a Pagar</label>
                             <input type="number" value={paymentValue} onChange={e => setPaymentValue(e.target.value)} className="w-full bg-brand-primary p-2 rounded-md border border-brand-border text-lg text-right" />
                         </div>
-                        <button onClick={handleCardPayment} className="w-full py-3 bg-blue-600 rounded-md text-white font-semibold hover:bg-blue-500">Processar Cartão de Débito</button>
+                        <button 
+                            onClick={handleCardPayment} 
+                            disabled={!paymentValue || parseFloat(paymentValue) <= 0}
+                            className="w-full py-3 bg-blue-600 rounded-md text-white font-semibold hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Processar Cartão de Débito
+                        </button>
                     </div>
                 );
             case 'PIX':
@@ -182,7 +207,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ total, onFinalize, onCancel
                                 <button onClick={handleAddPayment} className="w-full py-2 bg-green-600 rounded-md text-white font-semibold hover:bg-green-500">Confirmar Pagamento PIX</button>
                             </>
                         ) : (
-                            <button onClick={handleGeneratePixQrCode} className="w-full py-3 bg-green-600 rounded-md text-white font-semibold hover:bg-green-500">Gerar QR Code PIX</button>
+                            <button 
+                                onClick={handleGeneratePixQrCode} 
+                                disabled={!paymentValue || parseFloat(paymentValue) <= 0}
+                                className="w-full py-3 bg-green-600 rounded-md text-white font-semibold hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Gerar QR Code PIX
+                            </button>
                         )}
                     </div>
                 );
@@ -225,9 +256,18 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ total, onFinalize, onCancel
                 <h3 className="text-lg font-semibold mb-2">Pagamentos Adicionados</h3>
                 <div className="space-y-1 max-h-32 overflow-y-auto text-sm">
                 {payments.map((p, i) => (
-                    <div key={i} className="flex justify-between bg-brand-primary/50 p-2 rounded-md">
+                    <div key={i} className="flex justify-between items-center bg-brand-primary/50 p-2 rounded-md">
                         <span>{p.method}</span>
-                        <span className="font-mono">{p.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                        <div className="flex items-center gap-2">
+                            <span className="font-mono">{p.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                            <button 
+                                onClick={() => setPayments(prev => prev.filter((_, index) => index !== i))}
+                                className="text-red-400 hover:text-red-300 text-xs"
+                                title="Remover pagamento"
+                            >
+                                ✕
+                            </button>
+                        </div>
                     </div>
                 ))}
                 {payments.length === 0 && <p className="text-brand-subtle text-xs text-center">Nenhum pagamento adicionado.</p>}
@@ -236,7 +276,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ total, onFinalize, onCancel
 
             <div className="mt-6 flex gap-2">
                 <button onClick={onCancel} className="w-full py-3 bg-red-600/80 text-white font-semibold rounded-md hover:bg-red-600 transition-colors">Cancelar</button>
-                <button onClick={handleFinalize} disabled={amountRemaining > 0 || isFinalizing} className="w-full py-3 bg-green-600 text-white font-semibold rounded-md hover:bg-green-500 transition-colors disabled:opacity-50 disabled:cursor-wait">
+                <button onClick={handleFinalize} disabled={amountRemaining > 0.01 || isFinalizing || payments.length === 0} className="w-full py-3 bg-green-600 text-white font-semibold rounded-md hover:bg-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                     {isFinalizing ? <Spinner className="w-6 h-6 mx-auto" /> : 'Finalizar Venda'}
                 </button>
             </div>

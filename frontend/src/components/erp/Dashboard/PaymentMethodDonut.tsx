@@ -46,7 +46,7 @@ const PaymentMethodDonut: React.FC<DonutChartProps> = ({ data }) => {
 
                         return (
                             <path
-                                key={item.name}
+                                key={`${item.name}-${index}`}
                                 d={getArcPath(startAngle, endAngle, isHovered)}
                                 fill={COLORS[index % COLORS.length]}
                                 onMouseEnter={() => setHoveredSegment(item.name)}
@@ -67,7 +67,7 @@ const PaymentMethodDonut: React.FC<DonutChartProps> = ({ data }) => {
                 {data.map((item, index) => {
                     const percentage = (item.value / total) * 100;
                     return (
-                        <li key={item.name} className="flex items-center justify-between" onMouseEnter={() => setHoveredSegment(item.name)} onMouseLeave={() => setHoveredSegment(null)}>
+                        <li key={`legend-${item.name}-${index}`} className="flex items-center justify-between" onMouseEnter={() => setHoveredSegment(item.name)} onMouseLeave={() => setHoveredSegment(null)}>
                             <div className="flex items-center gap-2">
                                 <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
                                 <span className="font-semibold text-brand-text">{item.name}</span>

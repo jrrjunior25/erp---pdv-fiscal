@@ -4,7 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { WinstonModule } from 'nest-winston';
 import { winstonConfig } from './common/logger/winston.config';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
-import * as helmet from 'helmet';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -12,10 +12,9 @@ async function bootstrap() {
   });
 
   // Security headers
-  app.use(helmet({
-    contentSecurityPolicy: process.env.NODE_ENV === 'production',
-    crossOriginEmbedderPolicy: false,
-  }));
+  if (process.env.NODE_ENV === 'production') {
+    app.use(helmet());
+  }
 
   // CORS configuration
   app.enableCors({
@@ -32,9 +31,18 @@ async function bootstrap() {
 
   // Use a global pipe to validate incoming request data
   app.useGlobalPipes(new ValidationPipe({
-    whitelist: true, // Strip properties that do not have any decorators
-    forbidNonWhitelisted: false, // Allow extra fields (will be stripped by whitelist)
-    transform: true, // Automatically transform payloads to be objects typed according to their DTO classes
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+    transformOptions: {
+      enableImplicitConversion: true,
+    },
+    exceptionFactory: (errors) => {
+      const messages = errors.map(error => 
+        Object.values(error.constraints || {}).join(', ')
+      ).join('; ');
+      return new Error(`Validação falhou: ${messages}`);
+    },
   }));
 
   // Add a global prefix to all routes except root

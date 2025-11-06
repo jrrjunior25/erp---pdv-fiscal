@@ -15,8 +15,17 @@ export class GeminiService implements OnModuleInit {
             console.warn("GEMINI_API_KEY environment variable not set - Gemini features will be disabled");
             return;
         }
-        this.ai = new GoogleGenerativeAI(apiKey);
-        this.model = this.ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+        
+        try {
+            this.ai = new GoogleGenerativeAI(apiKey);
+            // Usar modelo mais recente disponível
+            this.model = this.ai.getGenerativeModel({ model: "gemini-2.5-flash" });
+            console.log("✅ Gemini initialized with model: gemini-2.5-flash");
+        } catch (error) {
+            console.error("❌ Failed to initialize Gemini:", error.message);
+            this.ai = null;
+            this.model = null;
+        }
     }
 
     private sanitizeDataForPrompt(data: any[]): string {
@@ -35,42 +44,63 @@ export class GeminiService implements OnModuleInit {
         if (!this.model) {
             return "Serviço Gemini não está configurado. Configure GEMINI_API_KEY para habilitar insights.";
         }
-        const prompt = `
-            Você é um analista de negócios especialista em varejo. Analise os seguintes dados de vendas e produtos de uma cafeteria e forneça 3 insights acionáveis e concisos em português.
-            Dados de Vendas (últimas 50): ${this.sanitizeDataForPrompt(salesHistory)}
-            Lista de Produtos: ${this.sanitizeDataForPrompt(products)}
-            Exemplo de insight: "Notei que as vendas de Café Espresso aumentam 30% após as 16h. Considere criar um combo de fim de tarde."
-            Forneça os insights em uma lista com marcadores.
-        `;
-        const result = await this.model.generateContent(prompt);
-        const response = await result.response;
-        return response.text();
+        
+        try {
+            const prompt = `
+                Você é um analista de negócios especialista em varejo. Analise os seguintes dados de vendas e produtos de uma cafeteria e forneça 3 insights acionáveis e concisos em português.
+                Dados de Vendas (últimas 50): ${this.sanitizeDataForPrompt(salesHistory)}
+                Lista de Produtos: ${this.sanitizeDataForPrompt(products)}
+                Exemplo de insight: "Notei que as vendas de Café Espresso aumentam 30% após as 16h. Considere criar um combo de fim de tarde."
+                Forneça os insights em uma lista com marcadores.
+            `;
+            const result = await this.model.generateContent(prompt);
+            const response = await result.response;
+            return response.text();
+        } catch (error) {
+            console.error('Gemini API Error:', error.message);
+            return `Erro ao gerar insights: ${error.message}. Verifique se a API Key é válida e tem permissões adequadas.`;
+        }
     }
 
     async answerBusinessQuery(query: string, salesHistory: any[], products: any[]): Promise<string> {
         if (!this.model) {
             return "Serviço Gemini não está configurado. Configure GEMINI_API_KEY para habilitar respostas.";
         }
-        const prompt = `
-            Você é um analista de dados. Responda à seguinte pergunta do gerente da loja com base nos dados fornecidos. Seja direto e use os dados para embasar sua resposta em português.
-            Pergunta: "${query}"
-            Dados de Vendas (últimas 50): ${this.sanitizeDataForPrompt(salesHistory)}
-            Lista de Produtos: ${this.sanitizeDataForPrompt(products)}
-        `;
-        const result = await this.model.generateContent(prompt);
-        const response = await result.response;
-        return response.text();
+        
+        try {
+            const prompt = `
+                Você é um analista de dados. Responda à seguinte pergunta do gerente da loja com base nos dados fornecidos. Seja direto e use os dados para embasar sua resposta em português.
+                Pergunta: "${query}"
+                Dados de Vendas (últimas 50): ${this.sanitizeDataForPrompt(salesHistory)}
+                Lista de Produtos: ${this.sanitizeDataForPrompt(products)}
+            `;
+            const result = await this.model.generateContent(prompt);
+            const response = await result.response;
+            return response.text();
+        } catch (error) {
+            console.error('Gemini API Error:', error.message);
+            return `Erro ao processar consulta: ${error.message}`;
+        }
     }
 
     async suggestProductName(currentName: string, category: string): Promise<string> {
-        const prompt = `
-            Sugira um nome de produto mais criativo e vendedor para uma cafeteria, baseado no nome atual e na categoria. Retorne apenas o novo nome, sem aspas ou texto adicional.
-            Nome Atual: "${currentName}"
-            Categoria: "${category}"
-        `;
-        const result = await this.model.generateContent(prompt);
-        const response = await result.response;
-        return response.text().trim();
+        if (!this.model) {
+            return currentName; // Retorna o nome original se não houver modelo
+        }
+        
+        try {
+            const prompt = `
+                Sugira um nome de produto mais criativo e vendedor para uma cafeteria, baseado no nome atual e na categoria. Retorne apenas o novo nome, sem aspas ou texto adicional.
+                Nome Atual: "${currentName}"
+                Categoria: "${category}"
+            `;
+            const result = await this.model.generateContent(prompt);
+            const response = await result.response;
+            return response.text().trim();
+        } catch (error) {
+            console.error('Gemini API Error:', error.message);
+            return currentName; // Fallback para o nome original
+        }
     }
 
     async parseAddToCartCommand(command: string, products: any[]): Promise<{ productName: string, quantity: number }[]> {

@@ -27,32 +27,46 @@ export class PixService {
    * Gera uma cobrança PIX com QR Code (BR Code)
    */
   async generatePixCharge(data: PixChargeData): Promise<PixCharge> {
-    this.logger.log(`Gerando cobrança PIX no valor de R$ ${data.amount}`);
+    try {
+      this.logger.log(`Gerando cobrança PIX no valor de R$ ${data.amount}`);
 
-    // Valores padrão
-    const pixData = {
-      amount: data.amount,
-      merchantName: data.merchantName || 'COMERCIO',
-      merchantCity: data.merchantCity || 'SAO PAULO',
-      pixKey: data.pixKey || process.env.PIX_KEY || '12345678000190',
-      description: data.description || `Venda ${data.saleId || ''}`,
-      txId: data.txId || this.generateTxId(),
-    };
+      // Validações
+      if (!data.amount || data.amount <= 0) {
+        throw new Error('Valor deve ser maior que zero');
+      }
 
-    const qrCode = this.generateBRCode(pixData);
+      if (data.amount > 999999.99) {
+        throw new Error('Valor máximo excedido');
+      }
 
-    // Expira em 30 minutos
-    const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + 30);
+      // Valores padrão
+      const pixData = {
+        amount: data.amount,
+        merchantName: data.merchantName || 'COMERCIO',
+        merchantCity: data.merchantCity || 'SAO PAULO',
+        pixKey: data.pixKey || process.env.PIX_KEY || '12345678000190',
+        description: data.description || `Venda ${data.saleId || ''}`,
+        txId: data.txId || this.generateTxId(),
+      };
 
-    this.logger.log(`PIX gerado: ${pixData.txId}`);
+      const qrCode = this.generateBRCode(pixData);
 
-    return {
-      qrCode,
-      txId: pixData.txId,
-      amount: data.amount,
-      expiresAt,
-    };
+      // Expira em 30 minutos
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 30);
+
+      this.logger.log(`PIX gerado: ${pixData.txId}`);
+
+      return {
+        qrCode,
+        txId: pixData.txId,
+        amount: data.amount,
+        expiresAt,
+      };
+    } catch (error) {
+      this.logger.error('Erro ao gerar PIX:', error.message);
+      throw new Error(`Falha na geração do PIX: ${error.message}`);
+    }
   }
 
   /**
