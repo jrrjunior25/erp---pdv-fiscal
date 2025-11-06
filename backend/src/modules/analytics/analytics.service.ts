@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import * as XLSX from 'xlsx';
 
 @Injectable()
 export class AnalyticsService {
@@ -89,5 +90,71 @@ export class AnalyticsService {
     }, {} as Record<string, number>);
 
     return Object.entries(grouped).map(([date, value]) => ({ date, value }));
+  }
+
+  async getAnalytics(period: number = 30) {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - period);
+
+    const [sales, customers, products] = await Promise.all([
+      this.prisma.sale.findMany({
+        where: { createdAt: { gte: startDate } },
+        include: { items: { include: { product: true } } }
+      }),
+      this.prisma.customer.findMany(),
+      this.prisma.product.findMany()
+    ]);
+
+    const totalSales = sales.length;
+    const totalRevenue = sales.reduce((sum, sale) => sum + sale.total, 0);
+    const averageTicket = totalSales > 0 ? totalRevenue / totalSales : 0;
+    
+    const topProducts = sales
+      .flatMap(sale => sale.items)
+      .reduce((acc, item) => {
+        const key = item.product.name;
+        if (!acc[key]) acc[key] = { name: key, quantity: 0, revenue: 0 };
+        acc[key].quantity += item.quantity;
+        acc[key].revenue += item.total;
+        return acc;
+      }, {} as Record<string, any>);
+
+    return {
+      salesMetrics: {
+        totalSales,
+        totalRevenue,
+        averageTicket,
+        topProducts: Object.values(topProducts).slice(0, 10)
+      },
+      customerMetrics: {
+        totalCustomers: customers.length,
+        newCustomers: customers.filter(c => c.createdAt >= startDate).length,
+        loyaltyPoints: customers.reduce((sum, c) => sum + c.loyaltyPoints, 0)
+      },
+      inventoryMetrics: {
+        lowStockItems: products.filter(p => p.stock <= p.minStock).length,
+        totalProducts: products.length,
+        stockValue: products.reduce((sum, p) => sum + (p.price * p.stock), 0)
+      }
+    };
+  }
+
+  async exportToExcel(period: number = 30): Promise<Buffer> {
+    const analytics = await this.getAnalytics(period);
+    
+    const data = [
+      { Métrica: 'Total de Vendas', Valor: analytics.salesMetrics.totalSales },
+      { Métrica: 'Receita Total', Valor: analytics.salesMetrics.totalRevenue },
+      { Métrica: 'Ticket Médio', Valor: analytics.salesMetrics.averageTicket },
+      { Métrica: 'Total de Clientes', Valor: analytics.customerMetrics.totalCustomers },
+      { Métrica: 'Novos Clientes', Valor: analytics.customerMetrics.newCustomers },
+      { Métrica: 'Total de Produtos', Valor: analytics.inventoryMetrics.totalProducts },
+      { Métrica: 'Produtos com Estoque Baixo', Valor: analytics.inventoryMetrics.lowStockItems },
+    ];
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Analytics');
+    return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
   }
 }

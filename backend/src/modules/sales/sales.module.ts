@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { SalesController } from './sales.controller';
 import { SalesService } from './sales.service';
+import { SalesExcelService } from './services/sales-excel.service';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { FiscalModule } from '../fiscal/fiscal.module';
 import { CommissionsModule } from '../commissions/commissions.module';
@@ -8,7 +9,7 @@ import { CommissionsModule } from '../commissions/commissions.module';
 @Module({
   imports: [PrismaModule, FiscalModule, CommissionsModule],
   controllers: [SalesController],
-  providers: [SalesService],
+  providers: [SalesService, SalesExcelService],
   exports: [SalesService],
 })
 export class SalesModule {}

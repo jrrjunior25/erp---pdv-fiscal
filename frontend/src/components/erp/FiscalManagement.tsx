@@ -48,11 +48,27 @@ const FiscalManagement: React.FC<FiscalManagementProps> = ({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">Gestão Fiscal</h2>
-        <p className="text-gray-600 mt-1">
-          Gerencie NFC-e, configurações fiscais e relatórios
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Gestão Fiscal</h2>
+          <p className="text-gray-600 mt-1">
+            Gerencie NFC-e, configurações fiscais e relatórios
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => window.open('/api/fiscal/export/template', '_blank')}
+            className="bg-green-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-green-700 transition-colors shadow-sm"
+          >
+            📥 Modelo
+          </button>
+          <button
+            onClick={() => window.open('/api/fiscal/export/excel', '_blank')}
+            className="bg-orange-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors shadow-sm"
+          >
+            📊 Exportar
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">

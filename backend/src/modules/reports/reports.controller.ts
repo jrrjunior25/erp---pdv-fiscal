@@ -71,6 +71,27 @@ export class ReportsController {
     }
   }
 
+  @Get('sales')
+  async getSalesReport(@Query('start') start: string, @Query('end') end: string) {
+    const startDate = start ? new Date(start) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const endDate = end ? new Date(end) : new Date();
+    
+    return this.reportsService.getSalesData(startDate, endDate);
+  }
+
+  @Get('financial')
+  async getFinancialReport(@Query('start') start: string, @Query('end') end: string) {
+    const startDate = start ? new Date(start) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const endDate = end ? new Date(end) : new Date();
+    
+    return this.reportsService.getFinancialData(startDate, endDate);
+  }
+
+  @Get('inventory')
+  async getInventoryReport() {
+    return this.reportsService.getInventoryData();
+  }
+
   @Get('periods')
   getPredefinedPeriods() {
     const today = new Date();

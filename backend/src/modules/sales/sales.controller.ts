@@ -1,6 +1,8 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, HttpException, HttpStatus, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { SalesService } from './sales.service';
+import { SalesExcelService } from './services/sales-excel.service';
 import { CreateSaleDto, UpdateSaleDto } from './dto/sale.dto';
 import { SALES_CONSTANTS } from './constants/sales.constants';
 import { SaleFilters } from './interfaces/sales.interface';
@@ -8,7 +10,10 @@ import { SaleFilters } from './interfaces/sales.interface';
 @Controller('sales')
 @UseGuards(JwtAuthGuard)
 export class SalesController {
-  constructor(private readonly salesService: SalesService) {}
+  constructor(
+    private readonly salesService: SalesService,
+    private readonly excelService: SalesExcelService,
+  ) {}
 
   @Get()
   async findAll(@Query() filters: SaleFilters) {
@@ -54,6 +59,22 @@ export class SalesController {
   @Put(':id')
   update(@Param('id') id: string, @Body() updateSaleDto: UpdateSaleDto) {
     return this.salesService.update(id, updateSaleDto);
+  }
+
+  @Get('export/excel')
+  async exportExcel(@Res() res: Response) {
+    const buffer = await this.excelService.exportToExcel();
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="vendas_${new Date().toISOString().split('T')[0]}.xlsx"`);
+    res.end(buffer);
+  }
+
+  @Get('export/template')
+  async exportTemplate(@Res() res: Response) {
+    const buffer = await this.excelService.exportTemplate();
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="modelo_vendas.xlsx"');
+    res.end(buffer);
   }
 
   @Delete(':id')

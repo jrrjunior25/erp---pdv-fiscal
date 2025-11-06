@@ -3,6 +3,7 @@ import { InventoryController } from './inventory.controller';
 import { InventoryService } from './inventory.service';
 import { StockMovementService } from './services/stock-movement.service';
 import { InventoryAlertsService } from './services/inventory-alerts.service';
+import { InventoryExcelService } from './services/inventory-excel.service';
 import { PrismaModule } from '../../prisma/prisma.module';
 
 @Module({
@@ -11,7 +12,8 @@ import { PrismaModule } from '../../prisma/prisma.module';
   providers: [
     InventoryService,
     StockMovementService,
-    InventoryAlertsService
+    InventoryAlertsService,
+    InventoryExcelService
   ],
   exports: [
     InventoryService,

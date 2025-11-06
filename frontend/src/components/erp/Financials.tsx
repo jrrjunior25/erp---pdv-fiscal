@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import type { AccountTransaction } from '@types';
+import { downloadFile } from '@utils/downloadHelper';
 
 interface FinancialsProps {
   transactions: AccountTransaction[];
@@ -64,6 +65,35 @@ const FinancialsTable: React.FC<{ title: string; data: AccountTransaction[], onU
 const Financials: React.FC<FinancialsProps> = ({ transactions, onUpdateStatus }) => {
   const [statusFilter, setStatusFilter] = useState<'Todos' | 'Pendente' | 'Pago' | 'Atrasado'>('Todos');
 
+  const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('/api/financials/import/excel', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        alert(`Importação concluída! ${result.imported} movimentações importadas.`);
+        window.location.reload();
+      } else {
+        alert(`Erro na importação: ${result.errors?.length || 0} erros encontrados.`);
+      }
+    } catch (error) {
+      alert('Erro ao importar arquivo');
+    }
+    e.target.value = '';
+  };
+
   const payable = useMemo(() => transactions.filter(t => t.type === 'payable'), [transactions]);
   const receivable = useMemo(() => transactions.filter(t => t.type === 'receivable'), [transactions]);
 
@@ -96,6 +126,24 @@ const Financials: React.FC<FinancialsProps> = ({ transactions, onUpdateStatus })
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Financeiro</h2>
+        <div className="flex gap-2">
+          <button
+            onClick={() => downloadFile('/api/financials/export/template', 'modelo_financeiro.xlsx')}
+            className="bg-green-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-green-700 transition-colors shadow-sm"
+          >
+            📥 Modelo
+          </button>
+          <button
+            onClick={() => downloadFile('/api/financials/export/excel', `financeiro_${new Date().toISOString().split('T')[0]}.xlsx`)}
+            className="bg-orange-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors shadow-sm"
+          >
+            📊 Exportar
+          </button>
+          <label className="bg-purple-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors shadow-sm cursor-pointer">
+            📤 Importar
+            <input type="file" accept=".xlsx,.xls" onChange={handleImportExcel} className="hidden" />
+          </label>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

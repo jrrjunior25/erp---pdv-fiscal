@@ -208,4 +208,85 @@ export class ReportsService {
       throw new BadRequestException(REPORTS_CONSTANTS.ERROR_MESSAGES.PRINT_ERROR);
     }
   }
+
+  async getSalesData(startDate: Date, endDate: Date) {
+    const sales = await this.prisma.sale.findMany({
+      where: { createdAt: { gte: startDate, lte: endDate } },
+      include: { customer: true, items: { include: { product: true } } }
+    });
+
+    const daily = sales.reduce((acc, sale) => {
+      const date = sale.createdAt.toISOString().split('T')[0];
+      if (!acc[date]) acc[date] = { total: 0, count: 0 };
+      acc[date].total += sale.total;
+      acc[date].count += 1;
+      return acc;
+    }, {} as Record<string, any>);
+
+    const byProduct = sales.flatMap(s => s.items).reduce((acc, item) => {
+      const name = item.product.name;
+      if (!acc[name]) acc[name] = { product: name, quantity: 0, revenue: 0 };
+      acc[name].quantity += item.quantity;
+      acc[name].revenue += item.total;
+      return acc;
+    }, {} as Record<string, any>);
+
+    const byCustomer = sales.filter(s => s.customer).reduce((acc, sale) => {
+      const name = sale.customer!.name;
+      if (!acc[name]) acc[name] = { customer: name, total: 0, count: 0 };
+      acc[name].total += sale.total;
+      acc[name].count += 1;
+      return acc;
+    }, {} as Record<string, any>);
+
+    return {
+      daily: Object.entries(daily).map(([date, data]) => ({ date, ...data })),
+      monthly: [], // Implementar se necessário
+      byProduct: Object.values(byProduct),
+      byCustomer: Object.values(byCustomer)
+    };
+  }
+
+  async getFinancialData(startDate: Date, endDate: Date) {
+    const movements = await this.prisma.financialMovement.findMany({
+      where: { date: { gte: startDate, lte: endDate } }
+    });
+
+    const cashFlow = movements.reduce((acc, mov) => {
+      const date = mov.date.toISOString().split('T')[0];
+      if (!acc[date]) acc[date] = { date, income: 0, expense: 0 };
+      if (mov.amount > 0) acc[date].income += mov.amount;
+      else acc[date].expense += Math.abs(mov.amount);
+      return acc;
+    }, {} as Record<string, any>);
+
+    return {
+      cashFlow: Object.values(cashFlow),
+      receivables: [], // Implementar com dados reais
+      payables: [] // Implementar com dados reais
+    };
+  }
+
+  async getInventoryData() {
+    const products = await this.prisma.product.findMany();
+    const movements = await this.prisma.stockMovement.findMany({
+      include: { product: true },
+      orderBy: { createdAt: 'desc' },
+      take: 100
+    });
+
+    return {
+      stockLevels: products.map(p => ({
+        product: p.name,
+        current: p.stock,
+        minimum: p.minStock
+      })),
+      movements: movements.map(m => ({
+        product: m.product.name,
+        type: m.type,
+        quantity: m.quantity,
+        date: m.createdAt.toISOString()
+      }))
+    };
+  }
 }

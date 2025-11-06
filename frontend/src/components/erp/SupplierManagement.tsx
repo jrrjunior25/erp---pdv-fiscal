@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import type { Supplier } from '@types';
 import EntityFormModal from './EntityFormModal';
 import ConfirmationModal from './ConfirmationModal';
+import { downloadFile } from '@utils/downloadHelper';
 
 interface SupplierManagementProps {
   suppliers: Supplier[];
@@ -47,6 +48,35 @@ const SupplierManagement: React.FC<SupplierManagementProps> = ({ suppliers, onAd
     }
   };
 
+  const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('/api/suppliers/import/excel', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        alert(`Importação concluída! ${result.imported} fornecedores importados.`);
+        window.location.reload();
+      } else {
+        alert(`Erro na importação: ${result.errors?.length || 0} erros encontrados.`);
+      }
+    } catch (error) {
+      alert('Erro ao importar arquivo');
+    }
+    e.target.value = '';
+  };
+
   const handleSave = async (data: any) => {
     if (selectedSupplier) {
       await onUpdate({ ...selectedSupplier, ...data });
@@ -69,12 +99,30 @@ const SupplierManagement: React.FC<SupplierManagementProps> = ({ suppliers, onAd
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Fornecedores</h2>
-        <button
-          onClick={handleOpenAdd}
-          className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-        >
-          + Novo Fornecedor
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => downloadFile('/api/suppliers/export/template', 'modelo_fornecedores.xlsx')}
+            className="bg-green-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-green-700 transition-colors shadow-sm"
+          >
+            📥 Modelo
+          </button>
+          <button
+            onClick={() => downloadFile('/api/suppliers/export/excel', `fornecedores_${new Date().toISOString().split('T')[0]}.xlsx`)}
+            className="bg-orange-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors shadow-sm"
+          >
+            📊 Exportar
+          </button>
+          <label className="bg-purple-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors shadow-sm cursor-pointer">
+            📤 Importar
+            <input type="file" accept=".xlsx,.xls" onChange={handleImportExcel} className="hidden" />
+          </label>
+          <button
+            onClick={handleOpenAdd}
+            className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+          >
+            + Novo Fornecedor
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

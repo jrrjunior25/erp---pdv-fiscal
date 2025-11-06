@@ -3,6 +3,7 @@ import type { Customer } from '@types';
 import EntityFormModal from './EntityFormModal';
 import ConfirmationModal from './ConfirmationModal';
 import SettleDebtModal from './SettleDebtModal';
+import { downloadFile } from '@utils/downloadHelper';
 
 interface CustomerManagementProps {
   customers: Customer[];
@@ -68,6 +69,35 @@ const CustomerManagement: React.FC<CustomerManagementProps> = ({ customers, onAd
       }
   }
 
+  const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('/api/customers/import/excel', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        alert(`Importação concluída! ${result.imported} clientes importados.`);
+        window.location.reload();
+      } else {
+        alert(`Erro na importação: ${result.errors?.length || 0} erros encontrados.`);
+      }
+    } catch (error) {
+      alert('Erro ao importar arquivo');
+    }
+    e.target.value = '';
+  };
+
   const handleSave = async (data: any) => {
     if (selectedCustomer) {
       await onUpdate({ ...selectedCustomer, ...data, creditLimit: parseFloat(data.creditLimit) });
@@ -95,12 +125,30 @@ const CustomerManagement: React.FC<CustomerManagementProps> = ({ customers, onAd
             <h1 className="text-2xl font-bold text-gray-900">Gerenciamento de Clientes</h1>
             <p className="text-sm text-gray-500 mt-1">Cadastro e controle de clientes</p>
           </div>
-          <button
-            onClick={handleOpenAdd}
-            className="bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-          >
-            + Novo Cliente
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => downloadFile('/api/customers/export/template', 'modelo_clientes.xlsx')}
+              className="bg-green-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-green-700 transition-colors shadow-sm"
+            >
+              📥 Modelo
+            </button>
+            <button
+              onClick={() => downloadFile('/api/customers/export/excel', `clientes_${new Date().toISOString().split('T')[0]}.xlsx`)}
+              className="bg-orange-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors shadow-sm"
+            >
+              📊 Exportar
+            </button>
+            <label className="bg-purple-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors shadow-sm cursor-pointer">
+              📤 Importar
+              <input type="file" accept=".xlsx,.xls" onChange={handleImportExcel} className="hidden" />
+            </label>
+            <button
+              onClick={handleOpenAdd}
+              className="bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+            >
+              + Novo Cliente
+            </button>
+          </div>
         </div>
       </div>
 

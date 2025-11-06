@@ -23,6 +23,7 @@ export default defineConfig(({ mode }) => {
           '@utils': path.resolve(__dirname, './src/utils'),
           '@hooks': path.resolve(__dirname, './src/hooks'),
           '@contexts': path.resolve(__dirname, './src/contexts'),
+          '@store': path.resolve(__dirname, './src/store'),
         }
       }
     };

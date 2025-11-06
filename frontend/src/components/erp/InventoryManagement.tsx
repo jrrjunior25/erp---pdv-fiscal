@@ -95,7 +95,19 @@ const InventoryManagement: React.FC<InventoryManagementProps> = ({ stockLevels, 
                     <h2 className="text-2xl font-bold text-gray-900">Gestão de Estoque</h2>
                     <p className="text-sm text-gray-500 mt-1">Controle completo do inventário</p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => window.open('/api/inventory/export/template', '_blank')}
+                        className="bg-green-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-green-700 transition-colors shadow-sm"
+                    >
+                        📥 Modelo
+                    </button>
+                    <button
+                        onClick={() => window.open('/api/inventory/export/excel', '_blank')}
+                        className="bg-orange-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors shadow-sm"
+                    >
+                        📊 Exportar
+                    </button>
                     <button 
                         onClick={handleStartNFeImport}
                         className="px-4 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors shadow-sm flex items-center gap-2"
