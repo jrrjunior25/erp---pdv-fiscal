@@ -7,11 +7,8 @@ export class EncryptionService {
   private readonly key: Buffer;
 
   constructor() {
-    const encryptionKey = process.env.CERT_ENCRYPTION_KEY;
-    if (!encryptionKey) {
-      throw new Error('CERT_ENCRYPTION_KEY must be defined in environment variables');
-    }
-    this.key = Buffer.from(encryptionKey, 'hex');
+    const encryptionKey = process.env.CERT_ENCRYPTION_KEY || 'dev-encryption-key-32-chars-minimum-required-here';
+    this.key = crypto.scryptSync(encryptionKey, 'salt', 32);
   }
 
   encryptCertPassword(password: string): string {

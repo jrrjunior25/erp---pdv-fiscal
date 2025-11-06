@@ -209,8 +209,10 @@ const ERPDashboard: React.FC<ERPDashboardProps> = (props) => {
   }> = ({ label, view, icon }) => (
     <li
       onClick={() => setActiveView(view)}
-      className={`flex items-center gap-3 p-3 rounded-md cursor-pointer transition-colors ${
-        activeView === view ? 'bg-brand-accent text-white' : 'hover:bg-brand-border text-brand-subtle'
+      className={`flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-all duration-200 ${
+        activeView === view 
+          ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' 
+          : 'text-gray-400 hover:bg-gray-700/50 hover:text-white'
       }`}
     >
       {icon}
@@ -252,16 +254,25 @@ const ERPDashboard: React.FC<ERPDashboardProps> = (props) => {
 
   return (
     <div className="flex h-screen font-sans bg-brand-primary text-brand-text">
-      <aside className="w-64 bg-brand-secondary p-4 flex flex-col border-r border-brand-border">
-        <div className="mb-8">
-            <h1 className="text-2xl font-bold text-white">Painel ERP</h1>
-            <p className="text-sm text-brand-subtle">Administração</p>
+      <aside className="w-72 bg-gradient-to-b from-gray-900 to-gray-800 p-6 flex flex-col border-r border-gray-700 shadow-2xl">
+        <div className="mb-8 pb-6 border-b border-gray-700">
+            <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 className="text-xl font-bold text-white">ERP + PDV Fiscal</h1>
+                    <p className="text-xs text-gray-400">Sistema de Gestão</p>
+                </div>
+            </div>
         </div>
         <nav className="flex-grow">
           <ul className="space-y-4">
             {Object.keys(navSections).map((section) => (
                 <li key={section}>
-                    <h3 className="px-3 text-xs font-semibold text-brand-subtle uppercase tracking-wider mb-2">{section}</h3>
+                    <h3 className="px-4 text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 mt-4">{section}</h3>
                     <ul className="space-y-1">
                         {navSections[section].map(item => <NavItem key={item.view} {...item} />)}
                     </ul>
@@ -272,21 +283,21 @@ const ERPDashboard: React.FC<ERPDashboardProps> = (props) => {
         <div className="mt-auto space-y-2">
             <button
             onClick={props.onBackToPDV}
-            className="flex items-center justify-center gap-2 w-full p-3 bg-brand-border rounded-md hover:bg-brand-accent/50 transition-colors"
+            className="flex items-center justify-center gap-2 w-full p-3 bg-gray-700 rounded-lg hover:bg-blue-600 transition-all duration-200 text-white font-medium shadow-md"
             >
             <ArrowUturnLeftIcon className="w-5 h-5" />
             <span className="font-semibold">Voltar ao PDV</span>
             </button>
             <button
                 onClick={props.onLogout}
-                className="flex items-center justify-center gap-2 w-full p-3 bg-brand-border rounded-md text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors"
+                className="flex items-center justify-center gap-2 w-full p-3 bg-gray-700 rounded-lg text-red-400 hover:bg-red-600 hover:text-white transition-all duration-200 font-medium shadow-md"
             >
                 <ArrowRightOnRectangleIcon className="w-5 h-5" />
                 <span className="font-semibold">Sair</span>
             </button>
         </div>
       </aside>
-      <main className="flex-1 p-6 overflow-y-auto">
+      <main className="flex-1 p-8 overflow-y-auto bg-gray-50">
         {props.currentUser ? renderContent() : <div className="text-center p-10">Carregando usuário...</div>}
       </main>
     </div>
