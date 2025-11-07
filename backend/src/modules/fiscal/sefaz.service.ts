@@ -76,11 +76,20 @@ export class SefazService {
     try {
       this.logger.log('Iniciando assinatura digital do XML');
 
+      if (!config.certificate || !config.password) {
+        throw new Error('Certificado ou senha não fornecidos');
+      }
+
       // Decodificar certificado do base64
-      const certificateBuffer = Buffer.from(config.certificate, 'base64');
+      let certificateBuffer: Buffer;
+      try {
+        certificateBuffer = Buffer.from(config.certificate, 'base64');
+      } catch (error) {
+        throw new Error('Certificado em formato inválido');
+      }
       
       // Carregar certificado PFX/P12
-      const p12Asn1 = forge.asn1.fromDer(certificateBuffer.toString('binary'));
+      const p12Asn1 = forge.asn1.fromDer(forge.util.decode64(config.certificate));
       const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, config.password);
 
       // Extrair chave privada e certificado
@@ -474,8 +483,11 @@ export class SefazService {
    */
   validateCertificate(certificate: string, password: string): { valid: boolean; expiresAt?: Date; cnpj?: string; error?: string } {
     try {
-      const certificateBuffer = Buffer.from(certificate, 'base64');
-      const p12Asn1 = forge.asn1.fromDer(certificateBuffer.toString('binary'));
+      if (!certificate || !password) {
+        return { valid: false, error: 'Certificado ou senha não fornecidos' };
+      }
+
+      const p12Asn1 = forge.asn1.fromDer(forge.util.decode64(certificate));
       const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, password);
 
       const bags = p12.getBags({ bagType: forge.pki.oids.certBag });

@@ -14,14 +14,14 @@ export class FiscalController {
   @Post('pix/generate')
   async generatePix(@Body() dto: GeneratePixDto) {
     try {
-      console.log('PIX Generate Request:', dto);
+      console.log('PIX Generate Request received');
       
       if (!dto.amount || dto.amount <= 0) {
         throw new HttpException('Valor deve ser maior que zero', HttpStatus.BAD_REQUEST);
       }
       
       const result = await this.fiscalService.generatePixCharge(dto);
-      console.log('PIX Generated Successfully:', result.txId);
+      console.log('PIX Generated Successfully');
       return result;
     } catch (error) {
       console.error('PIX Generation Error:', error.message);

@@ -91,7 +91,12 @@ class NFEService extends BaseService {
   }
 
   async downloadDANFE(id: string): Promise<void> {
-    const response = await fetch(`/api/fiscal/nfe/${id}/danfe`, {
+    const sanitizedId = id.replace(/[^a-zA-Z0-9_-]/g, '');
+    if (!sanitizedId) {
+      throw new Error('Invalid NFE ID');
+    }
+
+    const response = await fetch(`/api/fiscal/nfe/${sanitizedId}/danfe`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -106,7 +111,7 @@ class NFEService extends BaseService {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `DANFE_${id}.pdf`;
+    a.download = `DANFE_${sanitizedId}.pdf`;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);

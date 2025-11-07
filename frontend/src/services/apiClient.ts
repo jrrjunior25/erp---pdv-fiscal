@@ -1,6 +1,16 @@
 import * as tokenService from './tokenService';
 
-const API_BASE_URL = 'http://localhost:3001/api'; // Adjust to your backend URL
+const API_BASE_URL = 'http://localhost:3001/api';
+const ALLOWED_HOSTS = ['localhost', '127.0.0.1'];
+
+function validateEndpoint(endpoint: string): void {
+  if (endpoint.includes('://')) {
+    throw new Error('Invalid endpoint: absolute URLs not allowed');
+  }
+  if (endpoint.includes('..')) {
+    throw new Error('Invalid endpoint: path traversal not allowed');
+  }
+}
 
 const apiClient = {
   async request<T>(
@@ -29,13 +39,11 @@ const apiClient = {
     }
 
     try {
-      console.log(`[apiClient] ${method} request`);
+      validateEndpoint(endpoint);
       const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-      console.log(`[apiClient] Response status:`, response.status);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: response.statusText }));
-        console.error('[apiClient] Error response received');
         const errorMsg = errorData.message || errorData.error || response.statusText;
         throw new Error(Array.isArray(errorMsg) ? errorMsg.join(', ') : errorMsg);
       }
@@ -45,19 +53,14 @@ const apiClient = {
         return null as T;
       }
       
-      // Handle empty responses
       const text = await response.text();
       if (!text || text.trim() === '') {
-        console.log(`[apiClient] Empty response, returning null`);
         return null as T;
       }
       
-      const data = JSON.parse(text);
-      console.log('[apiClient] Success response received');
-      return data;
+      return JSON.parse(text);
 
     } catch (error) {
-      console.error('[apiClient] Request error');
       throw error;
     }
   },

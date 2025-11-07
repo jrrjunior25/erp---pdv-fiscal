@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
+  <NFe>
+    <infNFe versao="4.00" Id="NFe35251128906572000153550010000000011896103977">
+      <chNFe>35251128906572000153550010000000011896103977</chNFe>
+      <ide>
+        <cUF>35</cUF>
+        <cNF>17399059</cNF>
+        <natOp>VENDA DE MERCADORIA</natOp>
+        <mod>55</mod>
+        <serie>1</serie>
+        <nNF>1</nNF>
+        <dhEmi>2025-11-07T02:00:11.270Z</dhEmi>
+        <tpNF>1</tpNF>
+        <idDest>1</idDest>
+        <cMunFG/>
+        <tpImp>1</tpImp>
+        <tpEmis>1</tpEmis>
+        <cDV>7</cDV>
+        <tpAmb>2</tpAmb>
+        <finNFe>1</finNFe>
+        <indFinal>0</indFinal>
+        <indPres>1</indPres>
+        <procEmi>0</procEmi>
+        <verProc>1.0.0</verProc>
+      </ide>
+      <emit>
+        <CNPJ>28906572000153</CNPJ>
+        <xNome>SANDOVAL LESSA DA SILVA</xNome>
+        <xFant>CASA DAS VELAS OXÁLA</xFant>
+        <enderEmit>
+          <xLgr>RUA MACEIO</xLgr>
+          <nro>48</nro>
+          <xBairro>CENTRO</xBairro>
+          <cMun/>
+          <xMun>FEIRA DE SANTANA</xMun>
+          <UF>BA</UF>
+          <CEP/>
+          <cPais>1058</cPais>
+          <xPais>Brasil</xPais>
+        </enderEmit>
+        <IE>144219883</IE>
+        <CRT>1</CRT>
+      </emit>
+      <dest>
+        <xNome>Cliente Exemplo</xNome>
+        <enderDest>
+          <xLgr>Não informado</xLgr>
+          <nro>0</nro>
+          <xBairro>Centro</xBairro>
+          <cMun>3550308</cMun>
+          <xMun>São Paulo</xMun>
+          <UF>SP</UF>
+          <CEP>01000000</CEP>
+          <cPais>1058</cPais>
+          <xPais>Brasil</xPais>
+        </enderDest>
+        <indIEDest>9</indIEDest>
+      </dest>
+      <det nItem="1">
+        <prod>
+          <cProd>edd010f8-9122-441c-bcbf-052f3f5264c0</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Produto Exemplo 2</xProd>
+          <NCM>00000000</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>1.0000</qCom>
+          <vUnCom>25.50</vUnCom>
+          <vProd>25.50</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>1.0000</qTrib>
+          <vUnTrib>25.50</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS>
+            <ICMSSN102>
+              <orig>0</orig>
+              <CSOSN>102</CSOSN>
+            </ICMSSN102>
+          </ICMS>
+          <PIS>
+            <PISNT>
+              <CST>07</CST>
+            </PISNT>
+          </PIS>
+          <COFINS>
+            <COFINSNT>
+              <CST>07</CST>
+            </COFINSNT>
+          </COFINS>
+        </imposto>
+      </det>
+      <det nItem="2">
+        <prod>
+          <cProd>0ae8e4d2-e33a-4d36-9edc-ad24a7f984d8</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Produto Exemplo 1</xProd>
+          <NCM>00000000</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>1.0000</qCom>
+          <vUnCom>10.99</vUnCom>
+          <vProd>10.99</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>1.0000</qTrib>
+          <vUnTrib>10.99</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS>
+            <ICMSSN102>
+              <orig>0</orig>
+              <CSOSN>102</CSOSN>
+            </ICMSSN102>
+          </ICMS>
+          <PIS>
+            <PISNT>
+              <CST>07</CST>
+            </PISNT>
+          </PIS>
+          <COFINS>
+            <COFINSNT>
+              <CST>07</CST>
+            </COFINSNT>
+          </COFINS>
+        </imposto>
+      </det>
+      <det nItem="3">
+        <prod>
+          <cProd>290f9c61-d5cb-4a66-bd18-c6f708980616</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Produto Exemplo 3</xProd>
+          <NCM>00000000</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>1.0000</qCom>
+          <vUnCom>15.00</vUnCom>
+          <vProd>15.00</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>1.0000</qTrib>
+          <vUnTrib>15.00</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS>
+            <ICMSSN102>
+              <orig>0</orig>
+              <CSOSN>102</CSOSN>
+            </ICMSSN102>
+          </ICMS>
+          <PIS>
+            <PISNT>
+              <CST>07</CST>
+            </PISNT>
+          </PIS>
+          <COFINS>
+            <COFINSNT>
+              <CST>07</CST>
+            </COFINSNT>
+          </COFINS>
+        </imposto>
+      </det>
+      <total>
+        <ICMSTot>
+          <vBC>0.00</vBC>
+          <vICMS>0.00</vICMS>
+          <vICMSDeson>0.00</vICMSDeson>
+          <vFCP>0.00</vFCP>
+          <vBCST>0.00</vBCST>
+          <vST>0.00</vST>
+          <vFCPST>0.00</vFCPST>
+          <vFCPSTRet>0.00</vFCPSTRet>
+          <vProd>51.49</vProd>
+          <vFrete>0.00</vFrete>
+          <vSeg>0.00</vSeg>
+          <vDesc>0.00</vDesc>
+          <vII>0.00</vII>
+          <vIPI>0.00</vIPI>
+          <vIPIDevol>0.00</vIPIDevol>
+          <vPIS>0.00</vPIS>
+          <vCOFINS>0.00</vCOFINS>
+          <vOutro>0.00</vOutro>
+          <vNF>51.49</vNF>
+        </ICMSTot>
+      </total>
+      <transp>
+        <modFrete>1</modFrete>
+      </transp>
+      <cobr>
+        <fat>
+          <nFat>1</nFat>
+          <vOrig>51.49</vOrig>
+          <vLiq>51.49</vLiq>
+        </fat>
+      </cobr>
+      <pag>
+        <detPag>
+          <indPag>0</indPag>
+          <tPag>01</tPag>
+          <vPag>51.49</vPag>
+        </detPag>
+      </pag>
+      <infAdic>
+        <infCpl>NF-e gerada pelo sistema ERP+PDV - Documento auxiliar da Nota Fiscal Eletrônica</infCpl>
+      </infAdic>
+    </infNFe>
+  </NFe>
+</nfeProc>

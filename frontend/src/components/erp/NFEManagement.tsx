@@ -11,7 +11,6 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { nfeService, IssueNFERequest, NFEItem, NFERecipient } from '../../services/nfeService';
-import productService from '../../services/modules/productService';
 import apiClient from '../../services/apiClient';
 
 interface Product {
@@ -88,9 +87,7 @@ export const NFEManagement: React.FC = () => {
 
   const loadProducts = async () => {
     try {
-      console.log('Carregando produtos...');
-      const response = await productService.getAll();
-      console.log('Resposta da API de produtos:', response);
+      const response = await apiClient.get<any>('/products');
       
       let data = [];
       if (Array.isArray(response)) {
@@ -101,7 +98,6 @@ export const NFEManagement: React.FC = () => {
         data = response.products;
       }
       
-      console.log(`${data.length} produtos carregados`);
       setProducts(data);
     } catch (error: any) {
       console.error('Erro ao carregar produtos:', error);
@@ -169,6 +165,19 @@ export const NFEManagement: React.FC = () => {
     return selectedProducts.reduce((sum, item) => sum + (item.quantity * item.price), 0);
   };
 
+  const sanitizeText = (text: string): string => {
+    return text.replace(/[<>"'&]/g, (char) => {
+      const entities: Record<string, string> = {
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+        '&': '&amp;'
+      };
+      return entities[char] || char;
+    });
+  };
+
   const issueNFE = async () => {
     if (!selectedCustomer) {
       alert('Selecione um cliente antes de emitir a NF-e');
@@ -228,7 +237,10 @@ export const NFEManagement: React.FC = () => {
       const result = await apiClient.post('/fiscal/issue-nfe', nfeData);
       
       if (result.success) {
-        alert(`✅ NF-e emitida com sucesso!\n\nNúmero: ${result.number}\nChave: ${result.accessKey}\nStatus: ${result.status}`);
+        const safeNumber = String(result.number || '').replace(/[^0-9]/g, '');
+        const safeKey = String(result.accessKey || '').replace(/[^0-9]/g, '');
+        const safeStatus = sanitizeText(String(result.status || ''));
+        alert(`✅ NF-e emitida com sucesso!\n\nNúmero: ${safeNumber}\nChave: ${safeKey}\nStatus: ${safeStatus}`);
         setSelectedCustomer(null);
         setSelectedProducts([]);
         setObservations('');
@@ -237,11 +249,12 @@ export const NFEManagement: React.FC = () => {
         setActiveTab('list');
         await loadNFEs();
       } else {
-        alert(`❌ Erro ao emitir NF-e\n\n${result.message || 'Erro desconhecido'}`);
+        const safeMessage = sanitizeText(String(result.message || 'Erro desconhecido'));
+        alert(`❌ Erro ao emitir NF-e\n\n${safeMessage}`);
       }
     } catch (error: any) {
-      console.error('Erro ao emitir NF-e:', error);
-      alert(`❌ Erro ao emitir NF-e\n\n${error.message || 'Erro de comunicação com o servidor'}`);
+      const safeError = sanitizeText(String(error.message || 'Erro de comunicação com o servidor'));
+      alert(`❌ Erro ao emitir NF-e\n\n${safeError}`);
     } finally {
       setLoading(false);
     }
@@ -249,7 +262,12 @@ export const NFEManagement: React.FC = () => {
 
   const downloadDANFE = async (nfeId: string) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/fiscal/nfe/${nfeId}/danfe`, {
+      const sanitizedId = nfeId.replace(/[^a-zA-Z0-9_-]/g, '');
+      if (!sanitizedId) {
+        alert('ID de NF-e inválido');
+        return;
+      }
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/fiscal/nfe/${sanitizedId}/danfe`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -261,7 +279,7 @@ export const NFEManagement: React.FC = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `DANFE_${nfeId}.pdf`;
+      a.download = `DANFE_${sanitizedId}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
