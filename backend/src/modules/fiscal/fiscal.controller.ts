@@ -1,7 +1,9 @@
-import { Controller, Post, Body, UseGuards, Get, Param, Put, Query, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Param, Put, Query, Res, HttpException, HttpStatus } from '@nestjs/common';
+import { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { FiscalService } from './fiscal.service';
 import { IssueNfceDto } from './dto/issue-nfce.dto';
+import { IssueNfeDto } from './dto/issue-nfe.dto';
 import { GeneratePixDto } from './dto/generate-pix.dto';
 import { FISCAL_CONSTANTS } from './constants/fiscal.constants';
 
@@ -37,6 +39,16 @@ export class FiscalController {
       return await this.fiscalService.issueNfce(dto);
     } catch (error) {
       throw new HttpException(FISCAL_CONSTANTS.ERROR_MESSAGES.NFCE_ERROR, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  @Post('issue-nfe')
+  @UseGuards(JwtAuthGuard)
+  async issueNfe(@Body() dto: IssueNfeDto) {
+    try {
+      return await this.fiscalService.issueNfe(dto);
+    } catch (error) {
+      throw new HttpException(error.message || 'Erro ao emitir NF-e', HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -100,5 +112,60 @@ export class FiscalController {
     const yearNum = year ? parseInt(year) : undefined;
     const monthNum = month ? parseInt(month) : undefined;
     return this.fiscalService.listSavedXmls(yearNum, monthNum);
+  }
+
+  @Get('nfce/:id/pdf')
+  @UseGuards(JwtAuthGuard)
+  async getNfcePdf(@Param('id') id: string, @Res() res: Response) {
+    try {
+      const result = await this.fiscalService.getNfcePdf(id);
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+      res.setHeader('Cache-Control', 'no-cache');
+      
+      return res.send(result.pdf);
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  @Get('nfe/:id/danfe')
+  @UseGuards(JwtAuthGuard)
+  async getNfeDanfe(@Param('id') id: string, @Res() res: Response) {
+    try {
+      const result = await this.fiscalService.getNfeDanfe(id);
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+      res.setHeader('Cache-Control', 'no-cache');
+      
+      return res.send(result.pdf);
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  @Get('pdfs')
+  @UseGuards(JwtAuthGuard)
+  async listSavedPdfs(
+    @Query('year') year?: string,
+    @Query('month') month?: string,
+    @Query('day') day?: string,
+  ) {
+    const yearNum = year ? parseInt(year) : undefined;
+    const monthNum = month ? parseInt(month) : undefined;
+    const dayNum = day ? parseInt(day) : undefined;
+    return this.fiscalService.listSavedPdfs(yearNum, monthNum, dayNum);
+  }
+
+  @Post('nfce/:id/regenerate-pdf')
+  @UseGuards(JwtAuthGuard)
+  async regenerateNfcePdf(@Param('id') id: string) {
+    try {
+      return await this.fiscalService.regenerateNfcePdf(id);
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
   }
 }

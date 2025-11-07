@@ -14,6 +14,7 @@ import PurchaseOrderManagement from './PurchaseOrderManagement';
 import MainDashboard from './Dashboard/MainDashboard';
 import SystemSettings from './SystemSettings';
 import ReportsAndAnalytics from './ReportsAndAnalytics';
+import { NFEManagement } from './NFEManagement';
 import { hasPermission } from '@services/authService';
 
 
@@ -72,6 +73,11 @@ const Icons = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
     </svg>
   ),
+  NFE: (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+    </svg>
+  ),
   Back: (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
@@ -128,7 +134,7 @@ interface ERPDashboardProps {
   onLogout: () => void;
 }
 
-type ERPView = 'dashboard' | 'products' | 'customers' | 'suppliers' | 'inventory' | 'purchasing' | 'sales' | 'shifts' | 'financials' | 'reports' | 'users' | 'settings';
+type ERPView = 'dashboard' | 'products' | 'customers' | 'suppliers' | 'inventory' | 'purchasing' | 'sales' | 'shifts' | 'financials' | 'reports' | 'users' | 'settings' | 'nfe';
 
 const ERPDashboard: React.FC<ERPDashboardProps> = (props) => {
   const [activeView, setActiveView] = useState<ERPView>('dashboard');
@@ -220,6 +226,8 @@ const ERPDashboard: React.FC<ERPDashboardProps> = (props) => {
         );
       case 'settings':
         return <SystemSettings salesHistory={props.salesHistory} />;
+      case 'nfe':
+        return <NFEManagement />;
       default:
         return (
           <div className="flex items-center justify-center h-64">
@@ -264,6 +272,9 @@ const ERPDashboard: React.FC<ERPDashboardProps> = (props) => {
     { label: 'Compras', view: 'purchasing', icon: <Icons.Operations className="w-5 h-5" />, permission: 'manage_purchasing', section: 'Operações' },
     { label: 'Vendas', view: 'sales', icon: <Icons.Reports className="w-5 h-5" />, permission: 'view_reports', section: 'Operações' },
     { label: 'Turnos', view: 'shifts', icon: <Icons.Operations className="w-5 h-5" />, permission: 'view_reports', section: 'Operações' },
+    
+    // Fiscal
+    { label: 'NF-e', view: 'nfe', icon: <Icons.NFE className="w-5 h-5" />, permission: 'manage_products', section: 'Fiscal' },
     
     // Financeiro
     { label: 'Financeiro', view: 'financials', icon: <Icons.Financial className="w-5 h-5" />, permission: 'manage_financials', section: 'Financeiro' },

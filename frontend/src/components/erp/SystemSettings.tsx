@@ -39,7 +39,7 @@ interface SystemSettingsProps {
   salesHistory: SaleRecord[];
 }
 
-type TabType = 'company' | 'fiscal' | 'certificate' | 'nfce' | 'pix' | 'customization';
+type TabType = 'company' | 'fiscal' | 'certificate' | 'nfce' | 'nfe' | 'pix' | 'customization';
 
 const SystemSettings: React.FC<SystemSettingsProps> = ({ salesHistory }) => {
   const [activeTab, setActiveTab] = useState<TabType>('company');
@@ -210,6 +210,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ salesHistory }) => {
     { id: 'fiscal', label: 'Fiscal', icon: '📋' },
     { id: 'certificate', label: 'Certificado', icon: '🔒' },
     { id: 'nfce', label: 'NFC-e', icon: '📄' },
+    { id: 'nfe', label: 'NF-e', icon: '📋' },
     { id: 'pix', label: 'PIX', icon: '💳' },
     { id: 'customization', label: 'Visual', icon: '🎨' },
   ];
@@ -529,6 +530,52 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ salesHistory }) => {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === 'nfe' && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Configurações NF-e</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Série NF-e</label>
+                  <input 
+                    type="number" 
+                    min="1" 
+                    max="999"
+                    className={inputClass}
+                    placeholder="1"
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Ambiente</label>
+                  <select className={inputClass}>
+                    <option value="homologacao">Homologação</option>
+                    <option value="producao">Produção</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-blue-800">
+                      Informações sobre NF-e
+                    </h3>
+                    <div className="mt-2 text-sm text-blue-700">
+                      <p>
+                        A NF-e (Nota Fiscal Eletrônica) é utilizada para vendas entre empresas ou para consumidores pessoa jurídica.
+                        Ela possui layout mais completo que a NFC-e e gera o DANFE para impressão.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 

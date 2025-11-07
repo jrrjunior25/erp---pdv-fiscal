@@ -135,6 +135,83 @@ export class SefazService {
   }
 
   /**
+   * Envia NF-e para autorização na SEFAZ
+   */
+  async authorizeNfe(xml: string, config: SefazConfig): Promise<SefazResponse> {
+    try {
+      this.logger.log('Enviando NF-e para autorização SEFAZ');
+
+      // Assinar XML
+      const signedXml = await this.signXml(xml, config);
+
+      // Construir envelope de envio
+      const lote = Math.floor(Math.random() * 999999999);
+      const envelope = create({ version: '1.0', encoding: 'UTF-8' })
+        .ele('enviNFe', { 
+          xmlns: 'http://www.portalfiscal.inf.br/nfe',
+          versao: '4.00',
+        })
+        .ele('idLote').txt(lote.toString()).up()
+        .ele('indSinc').txt('1').up() // Síncrono
+        .ele('NFe', { xmlns: 'http://www.portalfiscal.inf.br/nfe' })
+          .import(create(signedXml).first())
+        .up()
+        .end({ prettyPrint: true });
+
+      // Selecionar ambiente
+      const urls = this.webserviceUrls[config.environment];
+
+      // Criar cliente SOAP
+      const client = await soap.createClientAsync(urls.NFeAutorizacao, {
+        endpoint: urls.NFeAutorizacao.replace('?wsdl', ''),
+      });
+
+      // Enviar para SEFAZ
+      const [result] = await client.nfeAutorizacaoLoteAsync({
+        nfeDadosMsg: envelope,
+      });
+
+      // Processar resposta
+      const retorno = result.nfeResultMsg;
+      
+      this.logger.log('Resposta SEFAZ recebida');
+
+      // Parse XML de resposta
+      const status = this.extractStatusFromXml(retorno);
+      
+      if (status.codigo === '100') {
+        // Autorizada
+        return {
+          success: true,
+          status: 'AUTORIZADA',
+          protocol: status.protocol,
+          xml: signedXml,
+          message: status.message,
+        };
+      } else if (status.codigo === '103' || status.codigo === '105') {
+        // Lote em processamento - consultar retorno
+        return await this.queryAuthorization(status.recibo, config);
+      } else {
+        // Rejeição ou erro
+        return {
+          success: false,
+          status: 'REJEITADA',
+          message: status.message,
+          error: `Código: ${status.codigo}`,
+        };
+      }
+    } catch (error) {
+      this.logger.error('Erro ao autorizar NF-e na SEFAZ', error);
+      return {
+        success: false,
+        status: 'ERRO',
+        message: 'Erro ao comunicar com SEFAZ',
+        error: error.message,
+      };
+    }
+  }
+
+  /**
    * Envia NFC-e para autorização na SEFAZ
    */
   async authorizeNfce(xml: string, config: SefazConfig): Promise<SefazResponse> {

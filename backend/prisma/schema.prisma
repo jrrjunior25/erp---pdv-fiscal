@@ -237,6 +237,7 @@ model FiscalConfig {
   pixMerchantCity String
   environment     String   @default("homologacao")
   nfceSeries      Int      @default(1)
+  nfeSeries       Int      @default(1)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
