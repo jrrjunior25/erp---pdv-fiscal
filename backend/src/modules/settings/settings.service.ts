@@ -46,8 +46,8 @@ export class SettingsService {
   private getDefaultSettings() {
     return {
       cnpj: '',
-      name: '',
-      fantasyName: '',
+      name: 'Empresa',
+      fantasyName: 'Empresa',
       ie: '',
       street: '',
       number: '',
@@ -59,98 +59,119 @@ export class SettingsService {
       pixKey: '',
       pixMerchantName: '',
       pixMerchantCity: '',
-      environment: SETTINGS_CONSTANTS.DEFAULT_ENVIRONMENT,
-      nfceSeries: SETTINGS_CONSTANTS.DEFAULT_NFCE_SERIES,
+      environment: 'homologacao',
+      nfceSeries: 1,
     };
   }
 
   private formatSettings(settings: any) {
+    const hasCertificate = !!(settings.certificate && settings.certificate.length > 0);
+    
     return {
       company: {
-        cnpj: settings.cnpj,
-        name: settings.name,
-        fantasyName: settings.fantasyName,
-        ie: settings.ie,
-        street: settings.street,
-        number: settings.number,
-        neighborhood: settings.neighborhood,
-        city: settings.city,
-        cityCode: settings.cityCode,
-        state: settings.state,
-        zipCode: settings.zipCode,
+        cnpj: settings.cnpj || '',
+        name: settings.name || 'Empresa',
+        fantasyName: settings.fantasyName || 'Empresa',
+        ie: settings.ie || '',
+        street: settings.street || '',
+        number: settings.number || '',
+        neighborhood: settings.neighborhood || '',
+        city: settings.city || '',
+        cityCode: settings.cityCode || '',
+        state: settings.state || '',
+        zipCode: settings.zipCode || '',
       },
       fiscal: {
-        environment: settings.environment,
-        nfceSeries: settings.nfceSeries,
-        hasCertificate: !!settings.certificate,
+        environment: settings.environment || 'homologacao',
+        nfceSeries: settings.nfceSeries || 1,
+        hasCertificate: hasCertificate,
         certExpiresAt: settings.certExpiresAt,
       },
       pix: {
-        pixKey: settings.pixKey,
-        pixMerchantName: settings.pixMerchantName,
-        pixMerchantCity: settings.pixMerchantCity,
+        pixKey: settings.pixKey || '',
+        pixMerchantName: settings.pixMerchantName || '',
+        pixMerchantCity: settings.pixMerchantCity || '',
       },
       customization: {
-        logoUrl: settings.certificate ? '/api/settings/logo' : null,
+        logoUrl: null, // Implementar quando necessário
         wallpaperUrl: null,
       },
     };
   }
 
   async updateSettings(data: UpdateSettingsDto) {
-    this.clearCache();
-    
-    const existingSettings = await this.prisma.fiscalConfig.findFirst();
-    const updateData = this.buildUpdateData(data);
+    try {
+      this.clearCache();
+      
+      const existingSettings = await this.prisma.fiscalConfig.findFirst();
+      const updateData = this.buildUpdateData(data);
 
-    if (!existingSettings) {
-      const result = await this.prisma.fiscalConfig.create({ data: updateData });
-      this.logger.log('Novas configurações criadas');
+      this.logger.log('Update data:', JSON.stringify(updateData, null, 2));
+
+      if (!existingSettings) {
+        const result = await this.prisma.fiscalConfig.create({ data: updateData });
+        this.logger.log('Novas configurações criadas');
+        return result;
+      }
+
+      const result = await this.prisma.fiscalConfig.update({
+        where: { id: existingSettings.id },
+        data: updateData,
+      });
+      
+      this.logger.log('Configurações atualizadas');
       return result;
+    } catch (error) {
+      this.logger.error('Erro ao atualizar configurações:', error);
+      throw new BadRequestException(`Erro ao salvar configurações: ${error.message}`);
     }
-
-    const result = await this.prisma.fiscalConfig.update({
-      where: { id: existingSettings.id },
-      data: updateData,
-    });
-    
-    this.logger.log('Configurações atualizadas');
-    return result;
   }
 
   private buildUpdateData(data: UpdateSettingsDto) {
-    return {
-      ...(data.company?.cnpj !== undefined && { cnpj: data.company.cnpj }),
-      ...(data.company?.name !== undefined && { name: data.company.name }),
-      ...(data.company?.fantasyName !== undefined && { fantasyName: data.company.fantasyName }),
-      ...(data.company?.ie !== undefined && { ie: data.company.ie }),
-      ...(data.company?.street !== undefined && { street: data.company.street }),
-      ...(data.company?.number !== undefined && { number: data.company.number }),
-      ...(data.company?.neighborhood !== undefined && { neighborhood: data.company.neighborhood }),
-      ...(data.company?.city !== undefined && { city: data.company.city }),
-      ...(data.company?.cityCode !== undefined && { cityCode: data.company.cityCode }),
-      ...(data.company?.state !== undefined && { state: data.company.state }),
-      ...(data.company?.zipCode !== undefined && { zipCode: data.company.zipCode }),
-      ...(data.pix?.pixKey !== undefined && { pixKey: data.pix.pixKey }),
-      ...(data.pix?.pixMerchantName !== undefined && { pixMerchantName: data.pix.pixMerchantName }),
-      ...(data.pix?.pixMerchantCity !== undefined && { pixMerchantCity: data.pix.pixMerchantCity }),
-      ...(data.fiscal?.environment !== undefined && { environment: data.fiscal.environment }),
-      ...(data.fiscal?.nfceSeries !== undefined && { nfceSeries: data.fiscal.nfceSeries }),
-    };
+    const updateData: any = {};
+    
+    if (data.company) {
+      if (data.company.cnpj !== undefined) updateData.cnpj = data.company.cnpj || '';
+      if (data.company.name !== undefined) updateData.name = data.company.name || 'Empresa';
+      if (data.company.fantasyName !== undefined) updateData.fantasyName = data.company.fantasyName || 'Empresa';
+      if (data.company.ie !== undefined) updateData.ie = data.company.ie || '';
+      if (data.company.street !== undefined) updateData.street = data.company.street || '';
+      if (data.company.number !== undefined) updateData.number = data.company.number || '';
+      if (data.company.neighborhood !== undefined) updateData.neighborhood = data.company.neighborhood || '';
+      if (data.company.city !== undefined) updateData.city = data.company.city || '';
+      if (data.company.cityCode !== undefined) updateData.cityCode = data.company.cityCode || '';
+      if (data.company.state !== undefined) updateData.state = data.company.state || '';
+      if (data.company.zipCode !== undefined) updateData.zipCode = data.company.zipCode || '';
+    }
+    
+    if (data.pix) {
+      if (data.pix.pixKey !== undefined) updateData.pixKey = data.pix.pixKey || '';
+      if (data.pix.pixMerchantName !== undefined) updateData.pixMerchantName = data.pix.pixMerchantName || '';
+      if (data.pix.pixMerchantCity !== undefined) updateData.pixMerchantCity = data.pix.pixMerchantCity || '';
+    }
+    
+    if (data.fiscal) {
+      if (data.fiscal.environment !== undefined) updateData.environment = data.fiscal.environment || 'homologacao';
+      if (data.fiscal.nfceSeries !== undefined) updateData.nfceSeries = data.fiscal.nfceSeries || 1;
+    }
+    
+    return updateData;
   }
 
   async uploadCertificate(data: CertificateUploadDto) {
-    this.clearCache();
-    
-    const existingSettings = await this.getOrCreateSettings();
-    
-    if (!data.certificate || !data.password) {
-      throw new BadRequestException(
-        `${SETTINGS_CONSTANTS.VALIDATION_MESSAGES.CERTIFICATE_REQUIRED} e ${SETTINGS_CONSTANTS.VALIDATION_MESSAGES.PASSWORD_REQUIRED.toLowerCase()}`
-      );
-    }
-
     try {
+      this.clearCache();
+      
+      const existingSettings = await this.getOrCreateSettings();
+      
+      if (!data.certificate || !data.password) {
+        throw new BadRequestException(
+          `${SETTINGS_CONSTANTS.VALIDATION_MESSAGES.CERTIFICATE_REQUIRED} e ${SETTINGS_CONSTANTS.VALIDATION_MESSAGES.PASSWORD_REQUIRED.toLowerCase()}`
+        );
+      }
+
+      this.logger.log('Processando upload de certificado...');
+      
       const encryptedPassword = this.encryption.encryptCertPassword(data.password);
       
       const result = await this.prisma.fiscalConfig.update({
@@ -162,11 +183,22 @@ export class SettingsService {
         },
       });
       
-      this.logger.log('Certificado atualizado com sucesso');
-      return { success: true, message: SETTINGS_CONSTANTS.SUCCESS_MESSAGES.CERTIFICATE_UPLOADED };
+      this.logger.log('Certificado salvo com sucesso no banco de dados');
+      return { 
+        success: true, 
+        message: SETTINGS_CONSTANTS.SUCCESS_MESSAGES.CERTIFICATE_UPLOADED,
+        hasCertificate: true
+      };
     } catch (error) {
-      this.logger.error('Erro ao criptografar senha do certificado:', error);
-      throw new BadRequestException(SETTINGS_CONSTANTS.ERROR_MESSAGES.CERTIFICATE_ENCRYPTION_ERROR);
+      this.logger.error('Erro completo ao processar certificado:', error);
+      
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      
+      throw new BadRequestException(
+        `Erro ao processar certificado: ${error.message || 'Erro desconhecido'}`
+      );
     }
   }
 

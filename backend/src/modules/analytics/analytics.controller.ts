@@ -20,9 +20,15 @@ export class AnalyticsController {
 
   @Get('export/excel')
   async exportExcel(@Query('period') period: string = '30', @Res() res: Response) {
-    const buffer = await this.analyticsService.exportToExcel(parseInt(period));
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename="analytics_${period}d_${new Date().toISOString().split('T')[0]}.xlsx"`);
-    res.end(buffer);
+    try {
+      const buffer = await this.analyticsService.exportToExcel(parseInt(period));
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename=analytics_${period}d_${new Date().toISOString().split('T')[0]}.xlsx`);
+      res.setHeader('Content-Length', buffer.length);
+      res.setHeader('Cache-Control', 'no-cache');
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({ message: 'Erro ao exportar analytics', error: error.message });
+    }
   }
 }

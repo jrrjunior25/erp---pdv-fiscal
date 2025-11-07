@@ -70,18 +70,30 @@ export class InventoryController {
 
   @Get('export/excel')
   async exportExcel(@Res() res: Response) {
-    const buffer = await this.excelService.exportToExcel();
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename="estoque_${new Date().toISOString().split('T')[0]}.xlsx"`);
-    res.end(buffer);
+    try {
+      const buffer = await this.excelService.exportToExcel();
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename=estoque_${new Date().toISOString().split('T')[0]}.xlsx`);
+      res.setHeader('Content-Length', buffer.length);
+      res.setHeader('Cache-Control', 'no-cache');
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({ message: 'Erro ao exportar estoque', error: error.message });
+    }
   }
 
   @Get('export/template')
   async exportTemplate(@Res() res: Response) {
-    const buffer = await this.excelService.exportTemplate();
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename="modelo_estoque.xlsx"');
-    res.end(buffer);
+    try {
+      const buffer = await this.excelService.exportTemplate();
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=modelo_estoque.xlsx');
+      res.setHeader('Content-Length', buffer.length);
+      res.setHeader('Cache-Control', 'no-cache');
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({ message: 'Erro ao exportar template', error: error.message });
+    }
   }
 
   @Post('import-nfe')

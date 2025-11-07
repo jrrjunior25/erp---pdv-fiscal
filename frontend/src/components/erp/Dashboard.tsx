@@ -12,9 +12,8 @@ import SupplierManagement from './SupplierManagement';
 import ShiftManagement from './ShiftManagement';
 import PurchaseOrderManagement from './PurchaseOrderManagement';
 import MainDashboard from './Dashboard/MainDashboard';
-import SettingsManagement from './SettingsManagement';
+import SystemSettings from './SystemSettings';
 import ReportsAndAnalytics from './ReportsAndAnalytics';
-import FiscalManagement from './FiscalManagement';
 import { hasPermission } from '@services/authService';
 
 
@@ -129,7 +128,7 @@ interface ERPDashboardProps {
   onLogout: () => void;
 }
 
-type ERPView = 'dashboard' | 'products' | 'customers' | 'suppliers' | 'inventory' | 'purchasing' | 'sales' | 'shifts' | 'financials' | 'reports' | 'fiscal' | 'users' | 'settings';
+type ERPView = 'dashboard' | 'products' | 'customers' | 'suppliers' | 'inventory' | 'purchasing' | 'sales' | 'shifts' | 'financials' | 'reports' | 'users' | 'settings';
 
 const ERPDashboard: React.FC<ERPDashboardProps> = (props) => {
   const [activeView, setActiveView] = useState<ERPView>('dashboard');
@@ -210,8 +209,6 @@ const ERPDashboard: React.FC<ERPDashboardProps> = (props) => {
         );
       case 'reports':
         return <ReportsAndAnalytics />;
-      case 'fiscal':
-        return <FiscalManagement salesHistory={props.salesHistory} />;
       case 'users':
         return (
           <UserManagement 
@@ -222,7 +219,7 @@ const ERPDashboard: React.FC<ERPDashboardProps> = (props) => {
           />
         );
       case 'settings':
-        return <SettingsManagement />;
+        return <SystemSettings salesHistory={props.salesHistory} />;
       default:
         return (
           <div className="flex items-center justify-center h-64">
@@ -273,7 +270,6 @@ const ERPDashboard: React.FC<ERPDashboardProps> = (props) => {
     
     // Relatórios
     { label: 'Relatórios', view: 'reports', icon: <Icons.Reports className="w-5 h-5" />, permission: 'view_reports', section: 'Relatórios' },
-    { label: 'Fiscal', view: 'fiscal', icon: <Icons.Operations className="w-5 h-5" />, permission: 'manage_financials', section: 'Relatórios' },
     
     // Sistema
     { label: 'Usuários', view: 'users', icon: <Icons.Users className="w-5 h-5" />, permission: 'manage_users', section: 'Sistema' },

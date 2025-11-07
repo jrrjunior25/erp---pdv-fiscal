@@ -28,10 +28,11 @@ export class ProductsController {
       const buffer = await this.excelService.exportToExcel();
       
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename="produtos_${new Date().toISOString().split('T')[0]}.xlsx"`);
+      res.setHeader('Content-Disposition', `attachment; filename=produtos_${new Date().toISOString().split('T')[0]}.xlsx`);
       res.setHeader('Content-Length', buffer.length);
+      res.setHeader('Cache-Control', 'no-cache');
       
-      res.end(buffer);
+      res.send(buffer);
     } catch (error) {
       console.error('[ProductsController] Erro ao exportar Excel:', error);
       res.status(500).json({ message: 'Erro ao exportar produtos', error: error.message });
@@ -45,10 +46,11 @@ export class ProductsController {
       const buffer = await this.excelService.exportTemplate();
       
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', 'attachment; filename="modelo_importacao_produtos.xlsx"');
+      res.setHeader('Content-Disposition', 'attachment; filename=modelo_importacao_produtos.xlsx');
       res.setHeader('Content-Length', buffer.length);
+      res.setHeader('Cache-Control', 'no-cache');
       
-      res.end(buffer);
+      res.send(buffer);
     } catch (error) {
       console.error('[ProductsController] Erro ao exportar template:', error);
       res.status(500).json({ message: 'Erro ao exportar template', error: error.message });

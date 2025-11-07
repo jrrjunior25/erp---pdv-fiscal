@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get, Param, Put, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Param, Put, Query, HttpException, HttpStatus } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { FiscalService } from './fiscal.service';
 import { IssueNfceDto } from './dto/issue-nfce.dto';
@@ -89,5 +89,16 @@ export class FiscalController {
   @UseGuards(JwtAuthGuard)
   async checkSefazStatus() {
     return this.fiscalService.checkSefazStatus();
+  }
+
+  @Get('xmls')
+  @UseGuards(JwtAuthGuard)
+  async listSavedXmls(
+    @Query('year') year?: string,
+    @Query('month') month?: string,
+  ) {
+    const yearNum = year ? parseInt(year) : undefined;
+    const monthNum = month ? parseInt(month) : undefined;
+    return this.fiscalService.listSavedXmls(yearNum, monthNum);
   }
 }

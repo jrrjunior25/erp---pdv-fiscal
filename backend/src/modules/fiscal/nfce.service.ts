@@ -51,6 +51,7 @@ export class NfceService {
 
     // Gerar chave de acesso (44 dígitos)
     const accessKey = this.generateAccessKey(data);
+    this.logger.log(`Chave de acesso gerada: ${accessKey}`);
 
     const root = create({ version: '1.0', encoding: 'UTF-8' })
       .ele('nfeProc', {
@@ -59,6 +60,9 @@ export class NfceService {
       })
       .ele('NFe', { xmlns: 'http://www.portalfiscal.inf.br/nfe' })
       .ele('infNFe', { versao: '4.00', Id: `NFe${accessKey}` });
+    
+    // Adicionar chave de acesso como elemento separado para facilitar extração
+    root.ele('chNFe').txt(accessKey);
 
     // 1. Identificação
     const ide = root.ele('ide');
@@ -181,6 +185,7 @@ export class NfceService {
     const xml = root.end({ prettyPrint: true });
     
     this.logger.log('XML NFC-e gerado com sucesso');
+    this.logger.log(`XML contém chave: ${xml.includes(accessKey)}`);
     return xml;
   }
 
