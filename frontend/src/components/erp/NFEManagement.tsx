@@ -64,6 +64,8 @@ export const NFEManagement: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState('DINHEIRO');
   const [transportModality, setTransportModality] = useState('9');
   const [observations, setObservations] = useState('');
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [productSearch, setProductSearch] = useState('');
 
   useEffect(() => {
     loadNFEs();
@@ -75,19 +77,8 @@ export const NFEManagement: React.FC = () => {
   const loadNFEs = async () => {
     try {
       setLoading(true);
-      // Mock data por enquanto - implementar endpoint depois
-      const mockData: NFE[] = [
-        {
-          id: '1',
-          number: 1,
-          series: 1,
-          key: '35250112345678901234567890123456789012345678',
-          status: 'AUTORIZADA',
-          createdAt: new Date().toISOString(),
-          protocol: '135250000000001'
-        }
-      ];
-      setNfes(mockData);
+      const data = await apiClient.get('/fiscal/nfe');
+      setNfes(data);
     } catch (error) {
       console.error('Erro ao carregar NFEs:', error);
     } finally {
@@ -97,10 +88,27 @@ export const NFEManagement: React.FC = () => {
 
   const loadProducts = async () => {
     try {
-      const data = await productService.getAll();
+      console.log('Carregando produtos...');
+      const response = await productService.getAll();
+      console.log('Resposta da API de produtos:', response);
+      
+      let data = [];
+      if (Array.isArray(response)) {
+        data = response;
+      } else if (response && Array.isArray(response.data)) {
+        data = response.data;
+      } else if (response && response.products && Array.isArray(response.products)) {
+        data = response.products;
+      }
+      
+      console.log(`${data.length} produtos carregados`);
       setProducts(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao carregar produtos:', error);
+      if (error.message?.includes('autenticação') || error.message?.includes('401')) {
+        alert('⚠️ Sessão expirada. Faça login novamente.');
+      }
+      setProducts([]);
     }
   };
 
@@ -115,7 +123,7 @@ export const NFEManagement: React.FC = () => {
 
   const checkSefazStatus = async () => {
     try {
-      const status = await nfeService.checkSefazStatus();
+      const status = await apiClient.get('/fiscal/sefaz/status');
       setSefazStatus(status);
     } catch (error) {
       console.error('Erro ao verificar status SEFAZ:', error);
@@ -162,8 +170,17 @@ export const NFEManagement: React.FC = () => {
   };
 
   const issueNFE = async () => {
-    if (!selectedCustomer || selectedProducts.length === 0) {
-      alert('Selecione um cliente e adicione produtos');
+    if (!selectedCustomer) {
+      alert('Selecione um cliente antes de emitir a NF-e');
+      return;
+    }
+    
+    if (selectedProducts.length === 0) {
+      alert('Adicione pelo menos um produto antes de emitir a NF-e');
+      return;
+    }
+
+    if (!confirm(`Confirma a emissão da NF-e no valor de R$ ${calculateTotal().toFixed(2)}?`)) {
       return;
     }
 
@@ -183,7 +200,7 @@ export const NFEManagement: React.FC = () => {
         zipCode: selectedCustomer.zipCode || '01000000'
       };
 
-      const nfeData: IssueNFERequest = {
+      const nfeData = {
         items: selectedProducts.map(item => ({
           productId: item.productId,
           name: item.name,
@@ -208,20 +225,23 @@ export const NFEManagement: React.FC = () => {
         observations
       };
 
-      const result = await nfeService.issueNFE(nfeData);
+      const result = await apiClient.post('/fiscal/issue-nfe', nfeData);
       
       if (result.success) {
-        alert(`NF-e ${result.number} emitida com sucesso!\nStatus: ${result.status}`);
+        alert(`✅ NF-e emitida com sucesso!\n\nNúmero: ${result.number}\nChave: ${result.accessKey}\nStatus: ${result.status}`);
         setSelectedCustomer(null);
         setSelectedProducts([]);
         setObservations('');
+        setCustomerSearch('');
+        setProductSearch('');
         setActiveTab('list');
-        loadNFEs();
+        await loadNFEs();
       } else {
-        alert(`Erro ao emitir NF-e: ${result.message}`);
+        alert(`❌ Erro ao emitir NF-e\n\n${result.message || 'Erro desconhecido'}`);
       }
     } catch (error: any) {
-      alert(`Erro ao emitir NF-e: ${error.message}`);
+      console.error('Erro ao emitir NF-e:', error);
+      alert(`❌ Erro ao emitir NF-e\n\n${error.message || 'Erro de comunicação com o servidor'}`);
     } finally {
       setLoading(false);
     }
@@ -229,7 +249,23 @@ export const NFEManagement: React.FC = () => {
 
   const downloadDANFE = async (nfeId: string) => {
     try {
-      await nfeService.downloadDANFE(nfeId);
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/fiscal/nfe/${nfeId}/danfe`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Erro ao baixar DANFE');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `DANFE_${nfeId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (error: any) {
       alert(`Erro ao baixar DANFE: ${error.message}`);
     }
@@ -308,9 +344,20 @@ export const NFEManagement: React.FC = () => {
               </button>
             </div>
 
-            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-              <table className="min-w-full divide-y divide-gray-300">
-                <thead className="bg-gray-50">
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <p className="mt-2 text-gray-600">Carregando NF-e...</p>
+              </div>
+            ) : nfes.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <FileText className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+                <p>Nenhuma NF-e emitida ainda</p>
+              </div>
+            ) : (
+              <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+                <table className="min-w-full divide-y divide-gray-300">
+                  <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Número
@@ -345,7 +392,7 @@ export const NFEManagement: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(nfe.createdAt).toLocaleString('pt-BR')}
+                        {nfe.createdAt ? new Date(nfe.createdAt).toLocaleString('pt-BR') : '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                         <button
@@ -358,9 +405,10 @@ export const NFEManagement: React.FC = () => {
                       </td>
                     </tr>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -394,10 +442,20 @@ export const NFEManagement: React.FC = () => {
                   <input
                     type="text"
                     placeholder="Buscar cliente..."
+                    value={customerSearch}
+                    onChange={(e) => setCustomerSearch(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   />
-                  <div className="max-h-40 overflow-y-auto border rounded-md">
-                    {customers.map((customer) => (
+                  {customers.length === 0 ? (
+                    <div className="text-center py-4 text-gray-500 border rounded-md">
+                      Nenhum cliente cadastrado
+                    </div>
+                  ) : (
+                    <div className="max-h-40 overflow-y-auto border rounded-md">
+                      {customers.filter(c => 
+                        c.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
+                        c.document?.includes(customerSearch)
+                      ).map((customer) => (
                       <button
                         key={customer.id}
                         onClick={() => setSelectedCustomer(customer)}
@@ -406,8 +464,9 @@ export const NFEManagement: React.FC = () => {
                         <div className="font-medium">{customer.name}</div>
                         <div className="text-sm text-gray-600">{customer.document}</div>
                       </button>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -422,11 +481,22 @@ export const NFEManagement: React.FC = () => {
                 <input
                   type="text"
                   placeholder="Buscar produto..."
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 />
                 
-                <div className="max-h-40 overflow-y-auto border rounded-md">
-                  {products.map((product) => (
+                {products.length === 0 ? (
+                  <div className="text-center py-4 text-gray-500 border rounded-md">
+                    Nenhum produto cadastrado. Cadastre produtos primeiro.
+                  </div>
+                ) : (
+                  <div className="max-h-40 overflow-y-auto border rounded-md">
+                    {products.filter(p => 
+                      p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+                      p.code.toLowerCase().includes(productSearch.toLowerCase()) ||
+                      p.barcode?.includes(productSearch)
+                    ).map((product) => (
                     <button
                       key={product.id}
                       onClick={() => addProduct(product)}
@@ -437,8 +507,9 @@ export const NFEManagement: React.FC = () => {
                         R$ {product.price.toFixed(2)} - {product.code}
                       </div>
                     </button>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

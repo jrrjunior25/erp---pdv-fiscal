@@ -979,6 +979,50 @@ export class FiscalService {
   }
 
   /**
+   * Lista todas as NF-e
+   */
+  async listNfes() {
+    const nfes = await this.prisma.nFe.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+
+    return nfes.map(nfe => ({
+      id: nfe.id,
+      number: nfe.number,
+      series: nfe.series,
+      key: nfe.key,
+      status: nfe.status,
+      protocol: nfe.protocol,
+      createdAt: nfe.createdAt,
+    }));
+  }
+
+  /**
+   * Busca NF-e por ID
+   */
+  async getNfeById(id: string) {
+    const nfe = await this.prisma.nFe.findUnique({
+      where: { id },
+    });
+
+    if (!nfe) {
+      throw new BadRequestException('NF-e não encontrada');
+    }
+
+    return {
+      id: nfe.id,
+      number: nfe.number,
+      series: nfe.series,
+      key: nfe.key,
+      status: nfe.status,
+      protocol: nfe.protocol,
+      createdAt: nfe.createdAt,
+      xml: nfe.xml,
+    };
+  }
+
+  /**
    * Calcula dígito verificador
    */
   private calculateDV(key: string): string {

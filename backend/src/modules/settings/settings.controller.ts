@@ -19,7 +19,7 @@ export class SettingsController {
   }
 
   @Put()
-  async updateSettings(@Body() data: UpdateSettingsDto) {
+  async updateSettings(@Body() data: any) {
     try {
       return await this.settingsService.updateSettings(data);
     } catch (error) {

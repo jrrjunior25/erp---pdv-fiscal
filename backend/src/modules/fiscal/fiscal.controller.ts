@@ -168,4 +168,24 @@ export class FiscalController {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
+
+  @Get('nfe')
+  @UseGuards(JwtAuthGuard)
+  async listNfes() {
+    try {
+      return await this.fiscalService.listNfes();
+    } catch (error) {
+      throw new HttpException('Erro ao listar NF-e', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Get('nfe/:id')
+  @UseGuards(JwtAuthGuard)
+  async getNfe(@Param('id') id: string) {
+    try {
+      return await this.fiscalService.getNfeById(id);
+    } catch (error) {
+      throw new HttpException('NF-e não encontrada', HttpStatus.NOT_FOUND);
+    }
+  }
 }

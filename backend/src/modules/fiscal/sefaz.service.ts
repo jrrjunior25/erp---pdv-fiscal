@@ -24,23 +24,50 @@ interface SefazResponse {
 export class SefazService {
   private readonly logger = new Logger(SefazService.name);
 
-  // URLs dos WebServices SEFAZ SP
-  private readonly webserviceUrls = {
-    homologacao: {
-      NFeAutorizacao: 'https://homologacao.nfce.fazenda.sp.gov.br/ws/NFeAutorizacao4.asmx?wsdl',
-      NFeRetAutorizacao: 'https://homologacao.nfce.fazenda.sp.gov.br/ws/NFeRetAutorizacao4.asmx?wsdl',
-      NFeStatusServico: 'https://homologacao.nfce.fazenda.sp.gov.br/ws/NFeStatusServico4.asmx?wsdl',
-      NFeConsultaProtocolo: 'https://homologacao.nfce.fazenda.sp.gov.br/ws/NFeConsultaProtocolo4.asmx?wsdl',
-      NFeInutilizacao: 'https://homologacao.nfce.fazenda.sp.gov.br/ws/NFeInutilizacao4.asmx?wsdl',
+  // URLs dos WebServices SEFAZ por UF
+  private readonly webserviceUrlsByUF = {
+    BA: {
+      homologacao: {
+        NFeAutorizacao: 'https://hnfe.sefaz.ba.gov.br/webservices/NFeAutorizacao4/NFeAutorizacao4.asmx?wsdl',
+        NFeRetAutorizacao: 'https://hnfe.sefaz.ba.gov.br/webservices/NFeRetAutorizacao4/NFeRetAutorizacao4.asmx?wsdl',
+        NFeStatusServico: 'https://hnfe.sefaz.ba.gov.br/webservices/NFeStatusServico4/NFeStatusServico4.asmx?wsdl',
+        NFeConsultaProtocolo: 'https://hnfe.sefaz.ba.gov.br/webservices/NFeConsultaProtocolo4/NFeConsultaProtocolo4.asmx?wsdl',
+        NFeInutilizacao: 'https://hnfe.sefaz.ba.gov.br/webservices/NFeInutilizacao4/NFeInutilizacao4.asmx?wsdl',
+      },
+      producao: {
+        NFeAutorizacao: 'https://nfe.sefaz.ba.gov.br/webservices/NFeAutorizacao4/NFeAutorizacao4.asmx?wsdl',
+        NFeRetAutorizacao: 'https://nfe.sefaz.ba.gov.br/webservices/NFeRetAutorizacao4/NFeRetAutorizacao4.asmx?wsdl',
+        NFeStatusServico: 'https://nfe.sefaz.ba.gov.br/webservices/NFeStatusServico4/NFeStatusServico4.asmx?wsdl',
+        NFeConsultaProtocolo: 'https://nfe.sefaz.ba.gov.br/webservices/NFeConsultaProtocolo4/NFeConsultaProtocolo4.asmx?wsdl',
+        NFeInutilizacao: 'https://nfe.sefaz.ba.gov.br/webservices/NFeInutilizacao4/NFeInutilizacao4.asmx?wsdl',
+      },
     },
-    producao: {
-      NFeAutorizacao: 'https://nfce.fazenda.sp.gov.br/ws/NFeAutorizacao4.asmx?wsdl',
-      NFeRetAutorizacao: 'https://nfce.fazenda.sp.gov.br/ws/NFeRetAutorizacao4.asmx?wsdl',
-      NFeStatusServico: 'https://nfce.fazenda.sp.gov.br/ws/NFeStatusServico4.asmx?wsdl',
-      NFeConsultaProtocolo: 'https://nfce.fazenda.sp.gov.br/ws/NFeConsultaProtocolo4.asmx?wsdl',
-      NFeInutilizacao: 'https://nfce.fazenda.sp.gov.br/ws/NFeInutilizacao4.asmx?wsdl',
+    SP: {
+      homologacao: {
+        NFeAutorizacao: 'https://homologacao.nfce.fazenda.sp.gov.br/ws/NFeAutorizacao4.asmx?wsdl',
+        NFeRetAutorizacao: 'https://homologacao.nfce.fazenda.sp.gov.br/ws/NFeRetAutorizacao4.asmx?wsdl',
+        NFeStatusServico: 'https://homologacao.nfce.fazenda.sp.gov.br/ws/NFeStatusServico4.asmx?wsdl',
+        NFeConsultaProtocolo: 'https://homologacao.nfce.fazenda.sp.gov.br/ws/NFeConsultaProtocolo4.asmx?wsdl',
+        NFeInutilizacao: 'https://homologacao.nfce.fazenda.sp.gov.br/ws/NFeInutilizacao4.asmx?wsdl',
+      },
+      producao: {
+        NFeAutorizacao: 'https://nfce.fazenda.sp.gov.br/ws/NFeAutorizacao4.asmx?wsdl',
+        NFeRetAutorizacao: 'https://nfce.fazenda.sp.gov.br/ws/NFeRetAutorizacao4.asmx?wsdl',
+        NFeStatusServico: 'https://nfce.fazenda.sp.gov.br/ws/NFeStatusServico4.asmx?wsdl',
+        NFeConsultaProtocolo: 'https://nfce.fazenda.sp.gov.br/ws/NFeConsultaProtocolo4.asmx?wsdl',
+        NFeInutilizacao: 'https://nfce.fazenda.sp.gov.br/ws/NFeInutilizacao4.asmx?wsdl',
+      },
     },
   };
+
+  private getWebserviceUrls(uf: string, environment: 'homologacao' | 'producao') {
+    const urls = this.webserviceUrlsByUF[uf];
+    if (!urls) {
+      this.logger.warn(`UF ${uf} não configurada, usando SP como padrão`);
+      return this.webserviceUrlsByUF.SP[environment];
+    }
+    return urls[environment];
+  }
 
   /**
    * Assina digitalmente o XML da NFC-e
@@ -159,11 +186,17 @@ export class SefazService {
         .end({ prettyPrint: true });
 
       // Selecionar ambiente
-      const urls = this.webserviceUrls[config.environment];
+      const urls = this.getWebserviceUrls(config.uf, config.environment);
 
       // Criar cliente SOAP
+      const https = require('https');
+      const axios = require('axios');
+      
       const client = await soap.createClientAsync(urls.NFeAutorizacao, {
         endpoint: urls.NFeAutorizacao.replace('?wsdl', ''),
+        request: axios.create({
+          httpsAgent: new https.Agent({ rejectUnauthorized: false })
+        })
       });
 
       // Enviar para SEFAZ
@@ -236,11 +269,17 @@ export class SefazService {
         .end({ prettyPrint: true });
 
       // Selecionar ambiente
-      const urls = this.webserviceUrls[config.environment];
+      const urls = this.getWebserviceUrls(config.uf, config.environment);
 
       // Criar cliente SOAP
+      const https = require('https');
+      const axios = require('axios');
+      
       const client = await soap.createClientAsync(urls.NFeAutorizacao, {
         endpoint: urls.NFeAutorizacao.replace('?wsdl', ''),
+        request: axios.create({
+          httpsAgent: new https.Agent({ rejectUnauthorized: false })
+        })
       });
 
       // Enviar para SEFAZ
@@ -295,7 +334,7 @@ export class SefazService {
     try {
       this.logger.log(`Consultando retorno da autorização. Recibo: ${recibo}`);
 
-      const urls = this.webserviceUrls[config.environment];
+      const urls = this.getWebserviceUrls(config.uf, config.environment);
 
       // Construir consulta
       const consulta = create({ version: '1.0', encoding: 'UTF-8' })
@@ -308,7 +347,14 @@ export class SefazService {
         .end({ prettyPrint: true });
 
       // Criar cliente SOAP
-      const client = await soap.createClientAsync(urls.NFeRetAutorizacao);
+      const https = require('https');
+      const axios = require('axios');
+      
+      const client = await soap.createClientAsync(urls.NFeRetAutorizacao, {
+        request: axios.create({
+          httpsAgent: new https.Agent({ rejectUnauthorized: false })
+        })
+      });
 
       // Aguardar processamento (tentar até 5 vezes com intervalo de 2 segundos)
       for (let i = 0; i < 5; i++) {
@@ -356,7 +402,10 @@ export class SefazService {
     try {
       this.logger.log('Consultando status do serviço SEFAZ');
 
-      const urls = this.webserviceUrls[config.environment];
+      const urls = this.getWebserviceUrls(config.uf, config.environment);
+
+      const ufCodes = { BA: '29', SP: '35' };
+      const cUF = ufCodes[config.uf] || '35';
 
       const consulta = create({ version: '1.0', encoding: 'UTF-8' })
         .ele('consStatServ', {
@@ -364,11 +413,20 @@ export class SefazService {
           versao: '4.00',
         })
         .ele('tpAmb').txt(config.environment === 'producao' ? '1' : '2').up()
-        .ele('cUF').txt('35').up() // SP
+        .ele('cUF').txt(cUF).up()
         .ele('xServ').txt('STATUS').up()
         .end({ prettyPrint: true });
 
-      const client = await soap.createClientAsync(urls.NFeStatusServico);
+      const https = require('https');
+      const axios = require('axios');
+      
+      const client = await soap.createClientAsync(urls.NFeStatusServico, {
+        request: axios.create({
+          httpsAgent: new https.Agent({
+            rejectUnauthorized: false
+          })
+        })
+      });
 
       const [result] = await client.nfeStatusServicoNFAsync({
         nfeDadosMsg: consulta,

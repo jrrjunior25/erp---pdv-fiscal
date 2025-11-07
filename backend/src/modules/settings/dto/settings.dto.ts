@@ -96,11 +96,6 @@ export class UpdateSettingsDto {
   @Type(() => PixSettingsDto)
   @IsOptional()
   pix?: PixSettingsDto;
-
-  @ValidateNested()
-  @Type(() => CustomizationSettingsDto)
-  @IsOptional()
-  customization?: CustomizationSettingsDto;
 }
 
 export class CertificateUploadDto {
