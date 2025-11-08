@@ -8,7 +8,13 @@ interface SalesTrendChartProps {
 const SalesTrendChart: React.FC<SalesTrendChartProps> = ({ data }) => {
     const [tooltip, setTooltip] = useState<{ x: number, y: number, date: string, total: number } | null>(null);
 
-    if (!data || data.length === 0) return null;
+    if (!data || data.length === 0) {
+        return (
+            <div className="flex items-center justify-center h-48 text-gray-500">
+                Sem dados de vendas
+            </div>
+        );
+    }
 
     const width = 500;
     const height = 200;
@@ -25,24 +31,29 @@ const SalesTrendChart: React.FC<SalesTrendChartProps> = ({ data }) => {
     }).join(' ');
 
     const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-        const svg = e.currentTarget;
-        const pt = svg.createSVGPoint();
-        pt.x = e.clientX;
-        const svgP = pt.matrixTransform(svg.getScreenCTM()?.inverse());
-        
-        const closestIndex = data.reduce((closest, _, i) => {
-            const dist = Math.abs(xScale(i) - svgP.x);
-            const closestDist = Math.abs(xScale(closest) - svgP.x);
-            return dist < closestDist ? i : closest;
-        }, 0);
+        try {
+            const svg = e.currentTarget;
+            const rect = svg.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            
+            const closestIndex = data.reduce((closest, _, i) => {
+                const dist = Math.abs(xScale(i) - x);
+                const closestDist = Math.abs(xScale(closest) - x);
+                return dist < closestDist ? i : closest;
+            }, 0);
 
-        const point = data[closestIndex];
-        setTooltip({
-            x: xScale(closestIndex),
-            y: yScale(point.total),
-            date: point.date,
-            total: point.total
-        });
+            const point = data[closestIndex];
+            if (point) {
+                setTooltip({
+                    x: xScale(closestIndex),
+                    y: yScale(point.total),
+                    date: point.date,
+                    total: point.total
+                });
+            }
+        } catch (error) {
+            console.error('Error in handleMouseMove:', error);
+        }
     };
 
     return (

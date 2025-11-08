@@ -1,18 +1,21 @@
 import apiClient from './apiClient';
 
 export const inventoryService = {
-  getAll: () => apiClient.get('/inventory'),
+  getLevels: (filters?: any) => apiClient.get('/inventory/levels', filters),
+  getMovements: (filters?: any) => apiClient.get('/inventory/movements', filters),
   getAlerts: () => apiClient.get('/inventory/alerts'),
-  getMovements: (productId?: string) => 
-    apiClient.get(`/inventory/movements${productId ? `?productId=${productId}` : ''}`),
-  createMovement: (data: any) => apiClient.post('/inventory/movements', data),
+  getLowStock: () => apiClient.get('/inventory/low-stock'),
+  getReport: () => apiClient.get('/inventory/report'),
+  getValuation: () => apiClient.get('/inventory/valuation'),
+  getAnalytics: (period?: string) => apiClient.get(`/inventory/analytics${period ? `?period=${period}` : ''}`),
+  getByCategory: () => apiClient.get('/inventory/by-category'),
+  getBySupplier: () => apiClient.get('/inventory/by-supplier'),
+  updateStock: (data: any) => apiClient.post('/inventory/update-stock', data),
+  transfer: (data: any) => apiClient.post('/inventory/transfer', data),
+  count: (data: any) => apiClient.post('/inventory/count', data),
   exportExcel: () => apiClient.download('/inventory/export/excel'),
   exportTemplate: () => apiClient.download('/inventory/export/template'),
-  importExcel: (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    return apiClient.post('/inventory/import/excel', formData);
-  },
+  importNfe: (data: any) => apiClient.post('/inventory/import-nfe', data),
 };
 
 export default inventoryService;

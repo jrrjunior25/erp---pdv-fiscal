@@ -38,8 +38,13 @@ model Product {
   cost          Float?         // Custo de compra
   stock         Int            @default(0)
   minStock      Int            @default(0)
+  maxStock      Int?           // Estoque máximo
   category      String?
+  supplierId    String?        // Fornecedor principal
   unit          String         @default("UN") // Unidade de medida (UN, KG, LT, etc)
+  location      String?        // Localização no estoque
+  lastStockIn   DateTime?      // Última entrada
+  lastStockOut  DateTime?      // Última saída
   
   // Campos Fiscais Obrigatórios para NF-e/NFC-e
   ncm           String?        // NCM - Nomenclatura Comum do Mercosul (8 dígitos)
@@ -58,6 +63,7 @@ model Product {
   active        Boolean          @default(true)
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
+  supplier      Supplier?        @relation(fields: [supplierId], references: [id])
   purchaseItems PurchaseItem[]
   saleItems     SaleItem[]
   stockMovements StockMovement[]
@@ -105,6 +111,7 @@ model Supplier {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   purchases Purchase[]
+  products  Product[]
 }
 
 model Sale {

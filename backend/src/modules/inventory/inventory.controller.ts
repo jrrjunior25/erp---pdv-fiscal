@@ -3,6 +3,7 @@ import { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { InventoryService } from './inventory.service';
 import { InventoryExcelService } from './services/inventory-excel.service';
+import { InventoryReportService } from './services/inventory-report.service';
 import { UpdateStockDto, InventoryCountDto, StockTransferDto, InventoryFiltersDto } from './dto/inventory.dto';
 
 @Controller('inventory')
@@ -11,6 +12,7 @@ export class InventoryController {
   constructor(
     private readonly inventoryService: InventoryService,
     private readonly excelService: InventoryExcelService,
+    private readonly reportService: InventoryReportService,
   ) {}
 
   @Get('levels')
@@ -99,5 +101,70 @@ export class InventoryController {
   @Post('import-nfe')
   importNfe(@Body() data: any) {
     return this.inventoryService.importNfe(data);
+  }
+
+  @Get('reports/stock/pdf')
+  async getStockReportPDF(@Query() filters: any, @Res() res: Response) {
+    try {
+      const buffer = await this.reportService.generateStockReportPDF(filters);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=relatorio_estoque_${new Date().toISOString().split('T')[0]}.pdf`);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({ message: 'Erro ao gerar relatório PDF', error: error.message });
+    }
+  }
+
+  @Get('reports/stock/excel')
+  async getStockReportExcel(@Query() filters: any, @Res() res: Response) {
+    try {
+      const buffer = await this.reportService.generateStockReportExcel(filters);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename=relatorio_estoque_${new Date().toISOString().split('T')[0]}.xlsx`);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({ message: 'Erro ao gerar relatório Excel', error: error.message });
+    }
+  }
+
+  @Get('reports/low-stock/pdf')
+  async getLowStockReportPDF(@Res() res: Response) {
+    try {
+      const buffer = await this.reportService.generateLowStockReportPDF();
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=estoque_baixo_${new Date().toISOString().split('T')[0]}.pdf`);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({ message: 'Erro ao gerar relatório', error: error.message });
+    }
+  }
+
+  @Get('reports/audit/pdf')
+  async getAuditReportPDF(@Query('startDate') startDate: string, @Query('endDate') endDate: string, @Res() res: Response) {
+    try {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const buffer = await this.reportService.generateAuditReportPDF(start, end);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=auditoria_estoque_${new Date().toISOString().split('T')[0]}.pdf`);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({ message: 'Erro ao gerar relatório de auditoria', error: error.message });
+    }
+  }
+
+  @Get('analytics')
+  async getAnalytics(@Query('period') period: string) {
+    return this.inventoryService.getAnalytics(period || '30d');
+  }
+
+  @Get('by-category')
+  async getByCategory() {
+    return this.inventoryService.getStockByCategory();
+  }
+
+  @Get('by-supplier')
+  async getBySupplier() {
+    return this.inventoryService.getStockBySupplier();
   }
 }

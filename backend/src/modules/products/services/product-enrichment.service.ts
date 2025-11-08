@@ -59,8 +59,8 @@ export class ProductEnrichmentService {
           return product;
         }
       } catch (apiError) {
-        if (apiError.response) {
-          this.logger.warn('[searchByBarcode] API Cosmos retornou erro');
+        if (axios.isAxiosError(apiError) && apiError.response) {
+          this.logger.warn(`[searchByBarcode] API Cosmos retornou erro: ${apiError.response.status}`);
         } else {
           this.logger.warn('[searchByBarcode] Erro ao conectar na API Cosmos');
         }
@@ -75,7 +75,7 @@ export class ProductEnrichmentService {
       this.logger.warn('[searchByBarcode] Nenhuma fonte retornou dados');
       return null;
     } catch (error) {
-      this.logger.error('[searchByBarcode] Erro ao buscar produto');
+      this.logger.error(`[searchByBarcode] Erro ao buscar produto: ${error?.message || 'Erro desconhecido'}`);
       return null;
     }
   }
@@ -84,6 +84,11 @@ export class ProductEnrichmentService {
    * Usa Gemini AI para sugerir informações do produto baseado no código de barras
    */
   private async suggestProductByBarcodeWithAI(barcode: string): Promise<GTINProductInfo | null> {
+    if (!this.geminiApiKey) {
+      this.logger.warn('[suggestProductByBarcodeWithAI] Gemini API key não configurada');
+      return null;
+    }
+
     try {
       const { GoogleGenerativeAI } = require('@google/generative-ai');
       const genAI = new GoogleGenerativeAI(this.geminiApiKey);
@@ -102,10 +107,10 @@ Responda em formato JSON:
 }`;
 
       const result = await model.generateContent(prompt);
+      if (!result?.response) return null;
       const response = await result.response;
       const text = response.text();
       
-      // Extrai JSON da resposta
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const data = JSON.parse(jsonMatch[0]);
@@ -119,7 +124,7 @@ Responda em formato JSON:
 
       return null;
     } catch (error) {
-      this.logger.error('[ProductEnrichment] Erro ao usar IA');
+      this.logger.error(`[ProductEnrichment] Erro ao usar IA: ${error?.message || 'Erro desconhecido'}`);
       return null;
     }
   }
@@ -169,12 +174,12 @@ Responda APENAS com JSON válido no formato:
 }`;
 
       const result = await model.generateContent(prompt);
+      if (!result?.response) return null;
       const response = await result.response;
       const text = response.text();
       
       this.logger.log('[ProductEnrichment] Resposta da IA recebida');
 
-      // Extrai JSON da resposta
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const data = JSON.parse(jsonMatch[0]);
@@ -191,7 +196,7 @@ Responda APENAS com JSON válido no formato:
 
       return null;
     } catch (error) {
-      this.logger.error('[ProductEnrichment] Erro ao sugerir dados fiscais');
+      this.logger.error(`[ProductEnrichment] Erro ao sugerir dados fiscais: ${error?.message || 'Erro desconhecido'}`);
       return null;
     }
   }
@@ -223,10 +228,10 @@ Responda APENAS com um array JSON:
 ]`;
 
       const result = await model.generateContent(prompt);
+      if (!result?.response) return [];
       const response = await result.response;
       const text = response.text();
       
-      // Extrai JSON da resposta
       const jsonMatch = text.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
         return JSON.parse(jsonMatch[0]);
@@ -234,7 +239,7 @@ Responda APENAS com um array JSON:
 
       return [];
     } catch (error) {
-      this.logger.error('[ProductEnrichment] Erro ao buscar NCM');
+      this.logger.error(`[ProductEnrichment] Erro ao buscar NCM: ${error?.message || 'Erro desconhecido'}`);
       return [];
     }
   }

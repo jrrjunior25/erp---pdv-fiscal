@@ -5,6 +5,7 @@ import SalesTrendChart from './SalesTrendChart';
 import PaymentMethodDonut from './PaymentMethodDonut';
 import TopItemsList from './TopItemsList';
 import GeminiAnalyzer from '@components/shared/GeminiAnalyzer';
+import ErrorBoundary from '@components/shared/ErrorBoundary';
 import type { SaleRecord, Product } from '@types/index';
 
 
@@ -70,11 +71,13 @@ const MainDashboard: React.FC<MainDashboardProps> = ({ data, salesHistory, produ
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 mt-6">
                 <div className="xl:col-span-2 bg-brand-secondary rounded-lg border border-brand-border p-4">
                     <h3 className="text-lg font-bold text-white mb-3">Tendência de Vendas (Últimos 7 dias)</h3>
-                    {charts.salesTrend && charts.salesTrend.length > 1 ? (
-                       <SalesTrendChart data={charts.salesTrend} />
-                    ) : (
-                        <div className="h-48 flex items-center justify-center text-brand-subtle">Dados insuficientes</div>
-                    )}
+                    <ErrorBoundary>
+                        {charts.salesTrend && charts.salesTrend.length > 1 ? (
+                           <SalesTrendChart data={charts.salesTrend} />
+                        ) : (
+                            <div className="h-48 flex items-center justify-center text-brand-subtle">Dados insuficientes</div>
+                        )}
+                    </ErrorBoundary>
                 </div>
                 <div className="bg-brand-secondary rounded-lg border border-brand-border p-4">
                     <h3 className="text-lg font-bold text-white mb-3">Faturamento por Pagamento</h3>

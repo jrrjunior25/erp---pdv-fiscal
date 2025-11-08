@@ -8,18 +8,17 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => (
   <div
-    className="bg-brand-secondary rounded-lg overflow-hidden border border-brand-border cursor-pointer group hover:border-brand-accent transition-all duration-300"
+    className="bg-white rounded-lg border border-gray-200 hover:border-blue-500 cursor-pointer transition-all hover:shadow-md p-3 flex items-center gap-3"
     onClick={() => onAddToCart(product)}
   >
-    <img src={product.imageUrl} alt={product.name} className="w-full h-32 object-cover" />
-    <div className="p-3">
-      <h3 className="text-sm font-semibold text-brand-text truncate">{product.name}</h3>
-      <p className="text-lg font-bold text-brand-accent mt-1">
+    <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-sm">
+      {product.name.charAt(0).toUpperCase()}
+    </div>
+    <div className="flex-1 min-w-0">
+      <h3 className="text-sm font-semibold text-gray-900 truncate">{product.name}</h3>
+      <p className="text-lg font-bold text-blue-600 mt-1">
         {product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
       </p>
-    </div>
-    <div className="bg-brand-accent/10 text-brand-accent text-center py-2 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">
-      Adicionar ao Carrinho
     </div>
   </div>
 );
@@ -31,7 +30,7 @@ interface ProductGridProps {
 
 const ProductGrid: React.FC<ProductGridProps> = ({ products, onAddToCart }) => {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+    <div className="space-y-2">
       {products.map(product => (
         <ProductCard key={product.id} product={product} onAddToCart={onAddToCart} />
       ))}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Product, CartItem, Customer } from '../../types';
+import PDVStats from './PDVStats';
 
 const SearchIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></svg>;
 const PlusIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>;
@@ -34,6 +35,7 @@ const ModernPDV: React.FC<ModernPDVProps> = ({
   const [priceCheckCode, setPriceCheckCode] = useState('');
   const [priceCheckResult, setPriceCheckResult] = useState<Product | null>(null);
   const [scrollMessage] = useState('Bem-vindo ao Sistema PDV - Atendimento Rápido e Eficiente - Aproveite nossas promoções!');
+  const [showTopSellers, setShowTopSellers] = useState(true);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -64,8 +66,15 @@ const ModernPDV: React.FC<ModernPDVProps> = ({
   }, [cart]);
 
   const filteredProducts = useMemo(() => {
-    return products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.code?.toLowerCase().includes(searchTerm.toLowerCase()));
+    const filtered = products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.code?.toLowerCase().includes(searchTerm.toLowerCase()));
+    return searchTerm ? filtered : filtered.slice(0, 20);
   }, [products, searchTerm]);
+
+  const topSellingProducts = useMemo(() => {
+    return [...products]
+      .sort((a, b) => ((b as any).salesCount || 0) - ((a as any).salesCount || 0))
+      .slice(0, 8);
+  }, [products]);
 
   const handleQuantityChange = useCallback((itemId: string, newQty: number) => {
     if (newQty < 1) onRemoveFromCart(itemId);
@@ -81,35 +90,88 @@ const ModernPDV: React.FC<ModernPDVProps> = ({
     <div className="flex h-full bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="flex-1 flex flex-col p-3 overflow-hidden">
         <div className="mb-3 space-y-2">
-          <div className="flex items-center bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 py-1.5 rounded-xl shadow-lg overflow-hidden">
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <div className="text-lg font-bold">{currentTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
-              <div className="text-xs opacity-90">{currentTime.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}</div>
-            </div>
-            <div className="flex-1 mx-2 overflow-hidden">
-              <div className="whitespace-nowrap text-base font-semibold opacity-90 animate-marquee inline-block">
-                {scrollMessage}
+          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-3">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="bg-gradient-to-br from-blue-600 to-blue-700 text-white px-4 py-2 rounded-lg shadow-sm">
+                  <div className="text-2xl font-bold">{currentTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
+                  <div className="text-xs opacity-90">{currentTime.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}</div>
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-gray-900">Sistema PDV Profissional</h1>
+                  <p className="text-xs text-gray-500">Ponto de Venda - Gestão Completa</p>
+                </div>
               </div>
             </div>
+            <PDVStats 
+              totalProducts={products.length} 
+              cartItemsCount={cart.reduce((sum, item) => sum + item.quantity, 0)} 
+              cartTotal={total} 
+            />
           </div>
 
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400"><SearchIcon /></div>
-            <input type="text" placeholder="Buscar produto..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm" autoFocus />
+            <input type="text" placeholder="Buscar produto por nome ou código..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-white border-2 border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm text-base" autoFocus />
           </div>
+
+          {!searchTerm && topSellingProducts.length > 0 && (
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200 p-3">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                  Produtos Mais Vendidos
+                </h2>
+                <button onClick={() => setShowTopSellers(!showTopSellers)} className="text-xs text-gray-600 hover:text-gray-900">
+                  {showTopSellers ? 'Ocultar' : 'Mostrar'}
+                </button>
+              </div>
+              {showTopSellers && (
+                <div className="grid grid-cols-4 gap-2">
+                  {topSellingProducts.map(product => (
+                    <button key={product.id} onClick={() => onAddToCart(product)} className="bg-white hover:bg-green-50 border border-green-300 rounded-lg p-2 transition-all hover:shadow-md text-left">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                          {product.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-xs font-semibold text-gray-900 truncate">{product.name}</h3>
+                        </div>
+                      </div>
+                      <p className="text-sm font-bold text-green-600">{product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto mb-2">
-          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-2">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm mb-2 p-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-gray-700">Catálogo de Produtos</h3>
+              <span className="text-xs text-gray-500">{filteredProducts.length} produtos</span>
+            </div>
+          </div>
+          <div className="space-y-1.5">
             {filteredProducts.map(product => (
-              <div key={product.id} onClick={() => onAddToCart(product)} className="group bg-white rounded-lg overflow-hidden border border-gray-200 hover:border-blue-500 cursor-pointer transition-all hover:shadow-lg hover:scale-105">
-                <div className="relative h-20 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                  {product.imageUrl ? <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" /> : <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>}
-                  {(product as any).stock < 10 && <div className="absolute top-1 right-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded">!</div>}
+              <div key={product.id} onClick={() => onAddToCart(product)} className="group bg-white rounded-lg border border-gray-200 hover:border-blue-500 cursor-pointer transition-all hover:shadow-md p-3 flex items-center justify-between">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-sm">
+                    {product.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-semibold text-gray-900 truncate">{product.name}</h3>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-xs text-gray-500">Cód: {product.code || 'N/A'}</span>
+                      {(product as any).stock < 10 && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium">Estoque baixo</span>}
+                    </div>
+                  </div>
                 </div>
-                <div className="p-2">
-                  <h3 className="text-xs font-semibold text-gray-900 mb-0.5 truncate">{product.name}</h3>
-                  <p className="text-lg font-bold text-blue-600">{product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                <div className="flex-shrink-0 text-right">
+                  <p className="text-xl font-bold text-blue-600">{product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Estoque: {(product as any).stock || 0}</p>
                 </div>
               </div>
             ))}

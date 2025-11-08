@@ -417,4 +417,88 @@ export class InventoryService {
       nfeKey: data.nfeKey || 'N/A',
     };
   }
+
+  async getAnalytics(period: string) {
+    const days = parseInt(period.replace('d', '')) || 30;
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const movements = await this.prisma.stockMovement.findMany({
+      where: { createdAt: { gte: startDate } },
+      include: { product: true }
+    });
+
+    const products = await this.prisma.product.findMany({
+      where: { active: true },
+      select: { id: true, name: true, stock: true, cost: true, category: true }
+    });
+
+    return {
+      period: `${days} dias`,
+      totalValue: products.reduce((sum, p) => sum + (p.stock * (p.cost || 0)), 0),
+      totalMovements: movements.length,
+      entriesCount: movements.filter(m => m.type === 'IN').length,
+      exitsCount: movements.filter(m => m.type === 'OUT').length,
+      adjustmentsCount: movements.filter(m => m.type === 'ADJUSTMENT').length,
+      lowStockCount: products.filter(p => p.stock <= (p as any).minStock).length,
+      categories: this.groupByCategory(products)
+    };
+  }
+
+  async getStockByCategory() {
+    const products = await this.prisma.product.findMany({
+      where: { active: true },
+      select: { category: true, stock: true, cost: true }
+    });
+
+    const grouped = products.reduce((acc, p) => {
+      const cat = p.category || 'Sem categoria';
+      if (!acc[cat]) {
+        acc[cat] = { category: cat, quantity: 0, value: 0, products: 0 };
+      }
+      acc[cat].quantity += p.stock;
+      acc[cat].value += p.stock * (p.cost || 0);
+      acc[cat].products += 1;
+      return acc;
+    }, {});
+
+    return Object.values(grouped);
+  }
+
+  async getStockBySupplier() {
+    const products = await this.prisma.product.findMany({
+      where: { active: true, supplierId: { not: null } },
+      include: { supplier: true }
+    });
+
+    const grouped = products.reduce((acc, p) => {
+      const supplierId = p.supplierId;
+      if (!supplierId) return acc;
+      
+      if (!acc[supplierId]) {
+        acc[supplierId] = {
+          supplierId,
+          supplierName: p.supplier?.name || 'N/A',
+          quantity: 0,
+          value: 0,
+          products: 0
+        };
+      }
+      acc[supplierId].quantity += p.stock;
+      acc[supplierId].value += p.stock * (p.cost || 0);
+      acc[supplierId].products += 1;
+      return acc;
+    }, {});
+
+    return Object.values(grouped);
+  }
+
+  private groupByCategory(products: any[]) {
+    const grouped = products.reduce((acc, p) => {
+      const cat = p.category || 'Sem categoria';
+      acc[cat] = (acc[cat] || 0) + 1;
+      return acc;
+    }, {});
+    return grouped;
+  }
 }

@@ -2,16 +2,22 @@
 
 export interface Product {
   id: string;
-  code: string; // For NF-e cProd matching
-  ean?: string; // EAN-13 barcode
+  code: string;
+  barcode?: string;
   name: string;
   price: number;
-  imageUrl: string;
-  category: string;
-  fiscalData?: {
-    ncm: string;
-    cfop: string;
-  };
+  cost?: number;
+  stock: number;
+  minStock: number;
+  maxStock?: number;
+  category?: string;
+  supplierId?: string;
+  location?: string;
+  imageUrl?: string;
+  ncm?: string;
+  cfop?: string;
+  cstIcms?: string;
+  active: boolean;
 }
 
 export interface Customer {
@@ -269,36 +275,76 @@ export interface HomologationItem {
 }
 
 // === Inventory Types ===
-export interface StockLevel {
+export interface InventoryItem {
+  id: string;
   productId: string;
   productName: string;
+  productCode: string;
   quantity: number;
+  minStock: number;
+  category: string;
+  lastMovement: Date;
+  status: 'ok' | 'low' | 'out' | 'overstock';
+  value: number;
 }
 
 export interface StockMovement {
   id: string;
-  timestamp: string;
   productId: string;
-  productName: string;
-  type: 'Venda' | 'Ajuste de Inventário' | 'Entrada Inicial' | 'Entrada (NF-e)' | 'Entrada (Compra)';
-  quantityChange: number;
-  reason: string; // e.g., Sale ID or "Inventory Count"
+  type: 'IN' | 'OUT' | 'ADJUSTMENT' | 'TRANSFER';
+  quantity: number;
+  previousStock: number;
+  newStock: number;
+  reason: string;
+  reference?: string;
+  userId: string;
+  location?: string;
+  createdAt: Date;
 }
 
 export interface InventoryCountItem {
   productId: string;
-  countedQuantity: number;
+  counted: number;
+  location?: string;
 }
 
 export interface InventoryReport {
-  discrepancies: {
-    productId: string;
-    productName: string;
-    expected: number;
-    counted: number;
-    difference: number;
-  }[];
-  timestamp: string;
+  totalProducts: number;
+  totalValue: number;
+  lowStockItems: number;
+  outOfStockItems: number;
+  topMovements: StockMovement[];
+  alerts: InventoryAlert[];
+}
+
+export interface InventoryAlert {
+  id: string;
+  productId: string;
+  type: 'LOW_STOCK' | 'OUT_OF_STOCK' | 'OVERSTOCK';
+  message: string;
+  currentStock: number;
+  threshold: number;
+  resolved: boolean;
+  createdAt: Date;
+}
+
+export interface StockValuation {
+  productId: string;
+  productName: string;
+  quantity: number;
+  unitCost: number;
+  totalValue: number;
+}
+
+export interface InventoryAnalytics {
+  period: string;
+  totalValue: number;
+  totalMovements: number;
+  entriesCount: number;
+  exitsCount: number;
+  adjustmentsCount: number;
+  lowStockCount: number;
+  categories: Record<string, number>;
 }
 
 // === NF-e Import Types ===
