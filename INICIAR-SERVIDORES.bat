@@ -22,11 +22,7 @@ echo.
 echo Backend:  http://localhost:3001
 echo Frontend: http://localhost:5173
 echo.
-echo Credenciais de Teste:
-echo - Admin:   admin@pdv.com   (senha: adm123)
-echo - Gerente: gerente@pdv.com (senha: adm123)
-echo - Caixa:   caixa@pdv.com   (senha: adm123)
-echo.
+
 echo ========================================
 echo.
 echo Pressione qualquer tecla para fechar...
